@@ -11,6 +11,7 @@ public class SubFolderDto {
 	
 	private int  sub_folder_id;
 	private String sub_folder_name;
+	private String sub_folder_short_name;
 	public int getSub_folder_id() {
 		return sub_folder_id;
 	}
@@ -23,6 +24,14 @@ public class SubFolderDto {
 	public void setSub_folder_name(String sub_folder_name) {
 		this.sub_folder_name = sub_folder_name;
 	}
+	public String getSub_folder_short_name() {
+		return sub_folder_short_name;
+	}
+	public void setSub_folder_short_name(String sub_folder_short_name) {
+		this.sub_folder_short_name = sub_folder_short_name;
+	}
+	
+	
 	
 	
 

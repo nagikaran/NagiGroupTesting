@@ -15,14 +15,10 @@ public class DriverDocumentManagementModel {
 	@Nullable
 	private String driver_name; // integer,
 	@Nullable
-	private String parent_folder_name; // integer,
-
-	@Nullable
-	private String sub_folder_name; // character varying,
+	private String load_number;
 	
 	@Nullable
-	private int sub_folder_id; // character varying,
-	
+	private String month;
 
 	@Nullable
 	private int driver_id; // character varying,

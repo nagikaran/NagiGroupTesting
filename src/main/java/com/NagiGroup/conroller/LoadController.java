@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -13,9 +14,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.NagiGroup.dto.driverDocument.DriverDocumentManagementDto;
 import com.NagiGroup.dto.load.LoadDto;
+import com.NagiGroup.model.load.LoadCompletionModel;
 import com.NagiGroup.model.load.LoadModel;
+import com.NagiGroup.model.load.LoadStatusModel;
 import com.NagiGroup.model.load.LoadUpdateModel;
 import com.NagiGroup.service.LoadService;
 import com.NagiGroup.utility.ApiResponse;
@@ -26,7 +28,7 @@ import io.swagger.v3.oas.annotations.Operation;
 @RequestMapping(value="/api/load")
 public class LoadController {
 	public LoadService loadService;
-	
+	@Autowired
 	public LoadController(LoadService loadService) {
 		this.loadService=loadService;
 		
@@ -38,10 +40,17 @@ public class LoadController {
 		return loadService.loadInsert(loadModel,request);		 
 	
 	}
+	
 	@PutMapping(value = "/update" ,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)	
 	@Operation(summary = "function = update_load")
 	public ApiResponse<Integer>  loadUpdate(@ModelAttribute LoadUpdateModel loadUpdateModel,HttpServletRequest request) {
 		return loadService.loadUpdate(loadUpdateModel,request);		 
+	
+	}
+	@PutMapping(value = "/updateLoad" ,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)	
+	@Operation(summary = "function = update_load")
+	public ApiResponse<Integer>  updateLoad(@ModelAttribute LoadUpdateModel loadUpdateModel,HttpServletRequest request) {
+		return loadService.updateLoad(loadUpdateModel,request);		 
 	
 	}
 	
@@ -59,12 +68,36 @@ public class LoadController {
 		return loadService.getLoadById(load_id);
 	}
 	
-	@PostMapping(value = "/assign/{loadId}")	
+	@PostMapping(value = "/assign",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)	
 	@Operation(summary = "function = update_load_status")
-	public ApiResponse<Integer>  assignLoad(int loadId,HttpServletRequest request) {
-		return loadService.assignLoad(loadId,request);		 
+	public ApiResponse<Integer>  assignLoad(@ModelAttribute LoadStatusModel loadStatusModel,HttpServletRequest request) {
+		return loadService.assignLoad(loadStatusModel,request);		 
 	
 	} 
+	
+	@PostMapping(value = "/in_progress")	
+	@Operation(summary = "function = mark_load_in_progress")
+	public ApiResponse<Integer>  markLoadInProgress(@ModelAttribute LoadStatusModel loadStatusModel,HttpServletRequest request) {
+		return loadService.markLoadInProgress(loadStatusModel,request);		 
+	
+	} 
+	
+	@PostMapping(value = "/completion",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)	
+	@Operation(summary = "function = handle_load_completion")
+	public ApiResponse<Integer>  markLoadComplete(@ModelAttribute LoadCompletionModel loadCompletionModel,HttpServletRequest request) {
+		return loadService.markLoadComplete(loadCompletionModel,request);		 
+	
+	} 
+	
+	
+	@PostMapping(value = "/save_doc",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)	
+	@Operation(summary = "function = handle_load_completion")
+	public ApiResponse<Integer>  saveDocument(@ModelAttribute LoadCompletionModel loadCompletionModel,HttpServletRequest request) {
+		return loadService.saveDocument(loadCompletionModel,request);		 
+	
+	} 
+	
+	
 	
 	
 	

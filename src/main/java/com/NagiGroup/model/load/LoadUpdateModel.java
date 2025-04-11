@@ -38,6 +38,8 @@ public class LoadUpdateModel {
 	private double final_price;
 	private int assign_to;
 	private String oldFileName;
+	private String company_name;
+	private String trailer_used;
 	 @Nullable
 	  private MultipartFile roc;
 	

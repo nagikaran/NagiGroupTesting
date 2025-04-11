@@ -8,14 +8,16 @@ public class DocumentDetails {
     private   String subFolderName; 
     private MultipartFile file;
     private int subFolderId;
+    private String newFileName;
     
 
-    public DocumentDetails(String documentName, String originalDocumentName,String subFolderName,MultipartFile file,int subFolderId) {
+    public DocumentDetails(String documentName, String originalDocumentName,String subFolderName,MultipartFile file,int subFolderId,String newFileName) {
         this.documentName = documentName;
         this.originalDocumentName = originalDocumentName;
         this.subFolderName=subFolderName;
         this.file=file;
         this.subFolderId=subFolderId;
+        this.newFileName=newFileName;
     }
 
 	public String getDocumentName() {
@@ -56,6 +58,14 @@ public class DocumentDetails {
 
 	public void setSubFolderId(int subFolderId) {
 		this.subFolderId = subFolderId;
+	}
+
+	public String getNewFileName() {
+		return newFileName;
+	}
+
+	public void setNewFileName(String newFileName) {
+		this.newFileName = newFileName;
 	}
     
     

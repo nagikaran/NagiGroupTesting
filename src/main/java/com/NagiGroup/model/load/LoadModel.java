@@ -29,12 +29,15 @@ public class LoadModel {
     private LocalDateTime  earliest_time_arrival; // timestamp without time zone,
 	private String pick_up_date_string;
 	private String delievery_date_string;
-	private String earliest_time_arrival_string;
+//	private String earliest_time_arrival_string;
 	private int driver_id;
 	private String driver_name;
+	private String company_name;
 	private double base_price;
 	private double final_price;
 	private int assign_to;
+	private int trailer_used;
+	private int company_id;
 	 @Nullable
 	  private MultipartFile roc;
 	

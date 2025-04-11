@@ -4,15 +4,13 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.springframework.stereotype.Service;
-
 import com.NagiGroup.dto.driverDocument.DriverDocumentManagementDto;
 import com.NagiGroup.dto.subFolder.SubFolderDto;
 import com.NagiGroup.model.DriverDocumentManagementModel;
 import com.NagiGroup.model.DriverDocumentManagementUpdateModel;
 import com.NagiGroup.utility.ApiResponse;
 
-@Service
+
 public interface DriverDocumentManagementService {
 
 	ApiResponse<Integer> driverDocumentManagemeInsert(DriverDocumentManagementModel driverDocumentManagementModel,
@@ -26,5 +24,8 @@ public interface DriverDocumentManagementService {
 			HttpServletRequest request);
 
 	ApiResponse<DriverDocumentManagementDto> getDriverDocumentManagementById(int driver_documents_id);
+
+	ApiResponse<Integer> driverDocumentManagemeInsertForSpecifedMonth(
+			DriverDocumentManagementModel driverDocumentManagementModel, HttpServletRequest request);
 
 }

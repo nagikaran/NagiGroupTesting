@@ -13,26 +13,42 @@ import lombok.ToString;
 @ToString
 public class LoadDto {
 	
-	private int load_id;
-	private String load_number;
-	private String source;
-	private String destination;
-	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime  pick_up_date; // timestamp without time zone,
-	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime  delievery_date; // timestamp without time zone,
-	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime  earliest_time_arrival; // timestamp without time zone,
-	private int driver_id;
-	private String driver_name;
-	private double base_price;
-	private double final_price;
-	private String file_name;
-	private Boolean detention;
-	private double hours_of_detention;
-	private Boolean lumper;
-	private double lumper_amount;
-	private double lumper_paid_by;
+		private int load_id;
+		private String load_number;
+		private String source;
+		private String destination;
+		@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+	    private LocalDateTime  shipping_date; // timestamp without time zone,
+		@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+	    private LocalDateTime  delivery_date; // timestamp without time zone,
+		@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+	    private LocalDateTime  eta; // timestamp without time zone,
+		private int driver_id;
+		private String driver_name;
+		private double base_price;
+		private double final_price;
+		private String file_name;
+		private Boolean detention;
+		private double hours_of_detention;
+		private Boolean lumper;
+		private Double lumper_price;
+		private Double detention_price;
+		private Double scale_price;
+		private double lumper_paid_by;
+		private Integer assigned_driver_id;
+		private String company_name;
+		private int trailer_used;
+		private int status_id;
+		private int company_id;
+		
+	public int getCompany_id() {
+		return company_id;
+	}
+	public void setCompany_id(int company_id) {
+		this.company_id = company_id;
+	}
+	
+	
 	public int getLoad_id() {
 		return load_id;
 	}
@@ -57,24 +73,7 @@ public class LoadDto {
 	public void setDestination(String destination) {
 		this.destination = destination;
 	}
-	public LocalDateTime getPick_up_date() {
-		return pick_up_date;
-	}
-	public void setPick_up_date(LocalDateTime pick_up_date) {
-		this.pick_up_date = pick_up_date;
-	}
-	public LocalDateTime getDelievery_date() {
-		return delievery_date;
-	}
-	public void setDelievery_date(LocalDateTime delievery_date) {
-		this.delievery_date = delievery_date;
-	}
-	public LocalDateTime getEarliest_time_arrival() {
-		return earliest_time_arrival;
-	}
-	public void setEarliest_time_arrival(LocalDateTime earliest_time_arrival) {
-		this.earliest_time_arrival = earliest_time_arrival;
-	}
+	
 	public int getDriver_id() {
 		return driver_id;
 	}
@@ -123,12 +122,7 @@ public class LoadDto {
 	public void setLumper(Boolean lumper) {
 		this.lumper = lumper;
 	}
-	public double getLumper_amount() {
-		return lumper_amount;
-	}
-	public void setLumper_amount(double lumper_amount) {
-		this.lumper_amount = lumper_amount;
-	}
+	
 	public double getLumper_paid_by() {
 		return lumper_paid_by;
 	}
@@ -136,8 +130,70 @@ public class LoadDto {
 		this.lumper_paid_by = lumper_paid_by;
 	}
 	
-	
-	
+	public String getCompany_name() {
+		return company_name;
+	}
+	public void setCompany_name(String company_name) {
+		this.company_name = company_name;
+	}
+	public int getTrailer_used() {
+		return trailer_used;
+	}
+	public void setTrailer_used(int trailer_used) {
+		this.trailer_used = trailer_used;
+	}
+	public LocalDateTime getShipping_date() {
+		return shipping_date;
+	}
+	public void setShipping_date(LocalDateTime shipping_date) {
+		this.shipping_date = shipping_date;
+	}
+	public LocalDateTime getDelivery_date() {
+		return delivery_date;
+	}
+	public void setDelivery_date(LocalDateTime delivery_date) {
+		this.delivery_date = delivery_date;
+	}
+	public LocalDateTime getEta() {
+		return eta;
+	}
+	public void setEta(LocalDateTime eta) {
+		this.eta = eta;
+	}
 	
 
+	public Integer getAssigned_driver_id() {
+		
+		return assigned_driver_id==null?0:assigned_driver_id;
+	}
+	public void setAssigned_driver_id(Integer assigned_driver_id) {
+		this.assigned_driver_id = assigned_driver_id;
+	}
+	public int getStatus_id() {
+		return status_id;
+	}
+	public void setStatus_id(int status_id) {
+		this.status_id = status_id;
+	}
+	public Double getLumper_price() {
+		return lumper_price==null?0:lumper_price;
+	}
+	public void setLumper_price(Double lumper_price) {
+		this.lumper_price = lumper_price;
+	}
+	public Double getDetention_price() {
+		return detention_price==null?0:detention_price;
+	}
+	public void setDetention_price(Double detention_price) {
+		this.detention_price = detention_price;
+	}
+	public Double getScale_price() {
+		return scale_price==null?0:scale_price;
+	}
+	public void setScale_price(Double scale_price) {
+		this.scale_price = scale_price;
+	}
+	
+	
+	
 }

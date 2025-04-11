@@ -16,6 +16,8 @@ public class DriverDocumentManagementDto {
 	private String sub_folder_name;
 	private int driver_id;
 	private String driver_name;
+	private int document_year;
+	private String document_month;
 	public String getDocument_name() {
 		return document_name;
 	}
@@ -63,6 +65,18 @@ public class DriverDocumentManagementDto {
 	}
 	public void setDriver_documents_id(int driver_documents_id) {
 		this.driver_documents_id = driver_documents_id;
+	}
+	public int getDocument_year() {
+		return document_year;
+	}
+	public void setDocument_year(int document_year) {
+		this.document_year = document_year;
+	}
+	public String getDocument_month() {
+		return document_month.trim();
+	}
+	public void setDocument_month(String document_month) {
+		this.document_month = document_month.trim();
 	}
 	
 	
