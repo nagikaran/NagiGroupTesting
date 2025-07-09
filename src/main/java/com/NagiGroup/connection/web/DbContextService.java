@@ -11,4 +11,6 @@ public interface DbContextService {
 	 <T> List<T> QueryToListWithParam(String query, Object[] paramsArray, Class<T> typeRef);
 	 <T> T QueryToFirstWithParam(String query, Object[] paramsArray,Class<T> typeRef);
 	 <T> List<T> QueryToList(String query, Class<T> typeRef);
+	 <T> T QueryToFirst(String query,Class<T> typeRef);
+	 long QueryToFirstWithLong(String query, Object[] paramsArray);
 }

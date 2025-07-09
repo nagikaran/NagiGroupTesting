@@ -4,9 +4,12 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.springframework.stereotype.Service;
-
+import com.NagiGroup.dto.companyDetails.CompanyNameDto;
+import com.NagiGroup.dto.load.LoadAssignmentDocumentDto;
 import com.NagiGroup.dto.load.LoadDto;
+import com.NagiGroup.dto.load.LoadStatusSummaryDto;
+import com.NagiGroup.model.load.CancelLoadModel;
+import com.NagiGroup.model.load.LoadAdditionalCharges;
 import com.NagiGroup.model.load.LoadCompletionModel;
 import com.NagiGroup.model.load.LoadModel;
 import com.NagiGroup.model.load.LoadStatusModel;
@@ -33,5 +36,20 @@ public interface LoadService {
 	ApiResponse<Integer> markLoadComplete(LoadCompletionModel loadCompletionModel, HttpServletRequest request);
 
 	ApiResponse<Integer> saveDocument(LoadCompletionModel loadCompletionModel, HttpServletRequest request);
+
+	ApiResponse<List<LoadDto>> getLoadByStatusId(int status_id);
+
+	ApiResponse<LoadStatusSummaryDto> getLoadCountAsPerTheStatus();
+
+	ApiResponse<List<CompanyNameDto>> geAllCompanyName();
+
+	ApiResponse<LoadAssignmentDocumentDto> getLoadDetailsForAssignment(int load_id, String load_number);
+
+	ApiResponse<Integer> requestToInvoice(LoadAdditionalCharges loadAdditionalCharges, HttpServletRequest request);
+
+	ApiResponse<Integer> cancelLoad(CancelLoadModel cancelLoadModel, HttpServletRequest request);
+
+	ApiResponse<Integer> requestToInvoiceForTonu(CancelLoadModel cancelLoadModel, HttpServletRequest request);
+
 
 }

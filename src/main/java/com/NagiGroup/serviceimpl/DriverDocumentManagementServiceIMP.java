@@ -4,22 +4,22 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.NagiGroup.dto.driverDocument.DriverDocumentManagementDto;
 import com.NagiGroup.dto.subFolder.SubFolderDto;
+import com.NagiGroup.model.DriverDocumentManagementBulkInsertModel;
 import com.NagiGroup.model.DriverDocumentManagementModel;
 import com.NagiGroup.model.DriverDocumentManagementUpdateModel;
+import com.NagiGroup.model.driverDocumement.DriverDocumentDeleteModel;
 import com.NagiGroup.repository.DriverDocumentManagementRepository;
 import com.NagiGroup.service.DriverDocumentManagementService;
 import com.NagiGroup.utility.ApiResponse;
 
 @Service
 public class DriverDocumentManagementServiceIMP implements  DriverDocumentManagementService {
-	
+
 	private DriverDocumentManagementRepository driverDocumentManagementRepository;
-	@Autowired
 	public DriverDocumentManagementServiceIMP(DriverDocumentManagementRepository driverDocumentManagementRepository) {
 		this.driverDocumentManagementRepository=driverDocumentManagementRepository;
 	}
@@ -61,6 +61,19 @@ public class DriverDocumentManagementServiceIMP implements  DriverDocumentManage
 		// TODO Auto-generated method stub
 		return driverDocumentManagementRepository.driverDocumentManagemeInsertForSpecifedMonth(driverDocumentManagementModel, request);
 		
+	}
+	@Override
+	public ApiResponse<Integer> driverDocumentManagemeBulkInsert(
+			DriverDocumentManagementBulkInsertModel documentManagementBulkInsertModel, HttpServletRequest request) {
+		// TODO Auto-generated method stub
+		return driverDocumentManagementRepository.driverDocumentManagemeBulkInsert(documentManagementBulkInsertModel, request);
+		
+	}
+	@Override
+	public ApiResponse<Integer> deleteDocument(DriverDocumentDeleteModel documentDeleteModel,
+			HttpServletRequest request) {
+		// TODO Auto-generated method stu
+		return driverDocumentManagementRepository.deleteDocument(documentDeleteModel,request);
 	}
 
 }

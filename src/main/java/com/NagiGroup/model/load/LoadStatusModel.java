@@ -16,7 +16,13 @@ public class LoadStatusModel {
 	private int load_id;
 	private String load_number;
 	private int driver_id;
-	@Nullable
-	 private MultipartFile roc;
+	private String driver_name;
+	private String old_driver_name;
+	private String file_name;
+	private String load_doc_base_path;
+	private String driver_doc_base_path;
+	private long driver_documents_id;
+//	@Nullable
+//	 private MultipartFile roc;
 	
 }

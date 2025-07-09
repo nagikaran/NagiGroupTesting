@@ -26,7 +26,7 @@ public class LoadModel {
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime  delievery_date; // timestamp without time zone,
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime  earliest_time_arrival; // timestamp without time zone,
+    //private LocalDateTime  earliest_time_arrival; // timestamp without time zone,
 	private String pick_up_date_string;
 	private String delievery_date_string;
 //	private String earliest_time_arrival_string;

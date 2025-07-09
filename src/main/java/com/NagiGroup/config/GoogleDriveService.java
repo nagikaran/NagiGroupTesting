@@ -1,5 +1,6 @@
 package com.NagiGroup.config;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -8,6 +9,8 @@ import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
@@ -23,6 +26,10 @@ import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 
 public class GoogleDriveService {
+	
+	
+	private static final Logger logger = LoggerFactory.getLogger(GoogleDriveService.class);
+	
 
     private static final String APPLICATION_NAME = "NagiGroupLive";
     private static final String SERVICE_ACCOUNT_KEY_PATH = System.getenv("GOOGLE_DRIVE_CREDENTIALS"); 
@@ -203,6 +210,169 @@ public class GoogleDriveService {
 
         return createdFolder.getId(); // Return the new folder ID
     }
+
+    public static String findFileIdInFolder(String fileName, String folderId) throws IOException, GeneralSecurityException {
+        Drive driveService = getDriveService();
+
+        String query = String.format("name='%s' and '%s' in parents and trashed=false", fileName, folderId);
+        FileList result = driveService.files().list()
+                .setQ(query)
+                .setSpaces("drive")
+                .setFields("files(id, name)")
+                .execute();
+
+        List<com.google.api.services.drive.model.File> files = result.getFiles();
+
+        if (files != null && !files.isEmpty()) {
+            String fileId = files.get(0).getId();
+            logger.info("✅ Found file: '" + fileName + "' with ID: " + fileId + " in folder: " + folderId);
+            return fileId;
+        } else {
+        	logger.info("❌ File not found: '" + fileName + "' in folder: " + folderId);
+        }
+
+        return null;
+    }
+
+    public static void moveFileToFolder(String fileId, String newFolderId, String fileName) {
+        try {
+            Drive driveService = getDriveService();
+
+            // Get current parent folders of the file
+            File file = driveService.files().get(fileId)
+                    .setFields("parents")
+                    .execute();
+
+            List<String> previousParents = file.getParents();
+            String previousParentsString = previousParents != null ? String.join(",", previousParents) : "";
+
+            // Move the file to the new folder
+            driveService.files().update(fileId, null)
+                    .setAddParents(newFolderId)
+                    .setRemoveParents(previousParentsString)
+                    .setFields("id, parents")
+                    .execute();
+
+            logger.info("✅ File '" + fileName + "' moved successfully to folder ID: " + newFolderId);
+        } catch (IOException e) {
+        	logger.info("❌ Failed to move file '" + fileName + "' to folder ID: " + newFolderId);
+            e.printStackTrace();
+        } catch (GeneralSecurityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+
+
+    public static void uploadFileToDriveWithReplace(MultipartFile file, String fileName, String folderId) throws IOException, GeneralSecurityException {
+        Drive service = getDriveService(); // assumes you have a method for this
+
+        // 1. Check if a file with the same name exists in the folder
+        String query = String.format("name = '%s' and '%s' in parents and trashed = false", fileName, folderId);
+        FileList result = service.files().list().setQ(query).setFields("files(id, name)").execute();
+
+        // 2. If found, delete the existing file
+        for (com.google.api.services.drive.model.File existingFile : result.getFiles()) {
+            service.files().delete(existingFile.getId()).execute();
+        }
+
+        // 3. Upload the new file
+        File fileMetadata = new File();
+        fileMetadata.setName(fileName);
+        fileMetadata.setParents(Collections.singletonList(folderId));
+
+        FileContent mediaContent = new FileContent(file.getContentType(), convertMultiPartToFile(file));
+        service.files().create(fileMetadata, mediaContent)
+                .setFields("id, parents")
+                .execute();
+    }
+    public static java.io.File convertMultiPartToFile(MultipartFile file) throws IOException {
+        java.io.File convFile = java.io.File.createTempFile("upload_", "_" + file.getOriginalFilename());
+        try (FileOutputStream fos = new FileOutputStream(convFile)) {
+            fos.write(file.getBytes());
+        }
+        return convFile;
+    }
+
+    public static void deleteAndUploadFileToDrive(MultipartFile file, String newFileName, String folderId, String oldFileName) throws IOException, GeneralSecurityException {
+        Drive service = getDriveService();
+
+        // Step 1: Delete old file (if exists)
+        if (oldFileName != null && !oldFileName.isEmpty()) {
+            String oldQuery = String.format("name = '%s' and '%s' in parents and trashed = false", oldFileName, folderId);
+            FileList oldResult = service.files().list().setQ(oldQuery).setFields("files(id, name)").execute();
+            for (com.google.api.services.drive.model.File oldFile : oldResult.getFiles()) {
+                service.files().delete(oldFile.getId()).execute();
+            }
+        }
+
+        // Step 2: Delete existing new file (if it somehow exists)
+        String query = String.format("name = '%s' and '%s' in parents and trashed = false", newFileName, folderId);
+        FileList result = service.files().list().setQ(query).setFields("files(id, name)").execute();
+        for (com.google.api.services.drive.model.File existingFile : result.getFiles()) {
+            service.files().delete(existingFile.getId()).execute();
+        }
+
+        // Step 3: Upload the new file
+        File fileMetadata = new File();
+        fileMetadata.setName(newFileName);
+        fileMetadata.setParents(Collections.singletonList(folderId));
+
+        FileContent mediaContent = new FileContent(file.getContentType(), convertMultiPartToFile(file));
+        service.files().create(fileMetadata, mediaContent)
+                .setFields("id, parents")
+                .execute();
+    }
+    
+    
+    public static boolean deleteFileFromLocalAndDrive(String localFilePath, String driveFolderId, String fileNameInDrive) {
+        boolean isLocalDeleted = false;
+        boolean isDriveDeleted = false;
+
+        // 1. Delete from local system
+        try {
+        	java.io.File localFile = new java.io.File(localFilePath);
+            if (localFile.exists()) {
+                isLocalDeleted = localFile.delete();
+                logger.info("Local file deleted: " + localFilePath);
+            } else {
+                logger.warn("Local file not found: " + localFilePath);
+            }
+        } catch (Exception e) {
+            logger.error("Error deleting local file: " + e.getMessage(), e);
+        }
+
+        // 2. Delete from Google Drive
+        try {
+            String fileId = GoogleDriveService.searchFileIdInFolder(fileNameInDrive, driveFolderId);
+            if (fileId != null) {
+                GoogleDriveService.deleteFile(fileId);
+                isDriveDeleted = true;
+                logger.info("Google Drive file deleted: " + fileNameInDrive);
+            } else {
+                logger.warn("File not found in Google Drive: " + fileNameInDrive);
+            }
+        } catch (Exception e) {
+            logger.error("Error deleting file from Google Drive: " + e.getMessage(), e);
+        }
+
+        return isLocalDeleted && isDriveDeleted;
+    }
+    public static String searchFileIdInFolder(String fileName, String parentFolderId) throws IOException, GeneralSecurityException {
+    	 Drive service = getDriveService();
+        String query = "name = '" + fileName + "' and '" + parentFolderId + "' in parents and trashed = false";
+        FileList result = service.files().list()
+            .setQ(query)
+            .setFields("files(id, name)")
+            .execute();
+        List<com.google.api.services.drive.model.File> files = result.getFiles();
+        return files.isEmpty() ? null : files.get(0).getId();
+    }
+    public static void deleteFile(String fileId) throws IOException, GeneralSecurityException {
+        Drive service = getDriveService();
+        service.files().delete(fileId).execute();
+    }
+
 
     
 }

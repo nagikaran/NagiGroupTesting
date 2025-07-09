@@ -1,5 +1,7 @@
 package com.NagiGroup.utility;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,6 +10,10 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -17,17 +23,24 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.NagiGroup.conroller.CommonController;
-import com.NagiGroup.dto.companyDetails.CompanyDto;
+import com.NagiGroup.dto.companyDetails.CompanyDetailsDto;
+import com.NagiGroup.model.load.LoadAdditionalCharges;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Image;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.PdfWriter;
 
 public class CommonUtility {
 	 private static final Logger logger = LoggerFactory.getLogger(CommonUtility.class);
-	public static boolean saveDocument(MultipartFile documentPath, String loadNumber, String basePath,String folderName) {
+	
+	 public static boolean saveDocument(MultipartFile documentPath, String loadNumber, String basePath,String folderName) {
 		String fileName = "";
 		String sourcePath = "";
-		basePath=basePath+folderName+"/"+loadNumber;
+		basePath=basePath+folderName+""+loadNumber;
 		System.out.println("basePath: "+basePath);
 		boolean isCreated = false;
 		if (documentPath != null) {
@@ -115,7 +128,7 @@ public class CommonUtility {
 	    }
 	 
 	 
-	 public static void generateInvoicePdf(CompanyDto companyDto,long invoiceNumber,double amount,String loadNumber) {
+	 public static void generateInvoicePdf(CompanyDetailsDto companyDto,long invoiceNumber,double amount,String loadNumber) {
 		   logger.info("generateInvoicePdf start");
 	        try (PDDocument document = new PDDocument()) {
 	            PDPage page = new PDPage(PDRectangle.A4);
@@ -214,15 +227,16 @@ public class CommonUtility {
 	   content5.setFont(PDType1Font.HELVETICA, 11);
 	   content5.newLineAtOffset(285, 720); // Right half, aligned similar to Remit To
 
-	   content5.showText(companyDto.getCompany_name());
+	   content5.showText(companyDto.getCompany_name() != null && !companyDto.getCompany_name().equals("") ? companyDto.getCompany_name() : "");
 	   content5.newLineAtOffset(0, -15);
-	   content5.showText(companyDto.getAddress_line1());
+	   content5.showText(companyDto.getAddress_line1() != null && !companyDto.getAddress_line1().equals("") ? companyDto.getAddress_line1() : "");
 	   content5.newLineAtOffset(0, -15);
-	   content5.showText(companyDto.getAddress_line2());
+	   content5.showText(companyDto.getAddress_line2() != null && !companyDto.getAddress_line2().equals("") ? companyDto.getAddress_line2() : "");
 	   content5.newLineAtOffset(0, -15);
-	   content5.showText(companyDto.getFax());
+	   content5.showText(companyDto.getFax() != null && !companyDto.getFax().equals("") ? companyDto.getFax() : "");
 	   content5.newLineAtOffset(0, -15);
-	   content5.showText(companyDto.getEmail());
+	   content5.showText(companyDto.getEmail() != null && !companyDto.getEmail().equals("") ? companyDto.getEmail() : "");
+
 	   content5.endText();
 
 	   content5.close();
@@ -309,9 +323,16 @@ public class CommonUtility {
 	content12.stroke();
 	content12.close();
 
-	            // Save PDF
-	            document.save("D:\\NAGI_GROUP\\invoice-sample\\invoice_step2.pdf");
-	            System.out.println("Step 2 PDF created successfully!");
+	String folderPath = "D:\\NAGI_GROUP\\invoice\\";
+	File directory = new File(folderPath);
+	if (!directory.exists()) {
+	    directory.mkdirs(); // creates the folder if it doesn't exist
+	}
+
+	String filePath = folderPath + loadNumber + "_invoice.pdf";
+	document.save(filePath);
+
+	            logger.info("Step 2 PDF created successfully!");
 	            
 	            logger.info("generateInvoicePdf end");
 	        } catch (IOException e) {
@@ -343,5 +364,111 @@ public class CommonUtility {
 		}
 	 
 	 
-	
+	 public static void mergePDFDocuments(List<String> sourcePaths, String destinationPath) {
+	        File outputFile = new File(destinationPath);
+	        File parentDir = outputFile.getParentFile();
+
+	        // Create directory if it doesn't exist
+	        if (!parentDir.exists()) {
+	            boolean created = parentDir.mkdirs();
+	            if (created) {
+	            	logger.info("Created folder: " + parentDir.getAbsolutePath());
+	            } else {
+	            	logger.info("Failed to create folder: " + parentDir.getAbsolutePath());
+	                return;
+	            }
+	        }
+
+	        PDFMergerUtility merger = new PDFMergerUtility();
+	        merger.setDestinationFileName(destinationPath);
+
+	        try {
+	            for (String path : sourcePaths) {
+	                merger.addSource(path);
+	            }
+
+	            merger.mergeDocuments(null);
+	            logger.info("PDFs merged successfully into: " + destinationPath);
+	        } catch (IOException e) {
+	        	logger.error("Failed to merge PDFs: " + e.getMessage());
+	            e.printStackTrace();
+	        }
+	    }
+	 public static double getFinalRate(LoadAdditionalCharges loadAdditionalCharges) {
+		    double finalAmount = loadAdditionalCharges.getAmount();
+		    
+		    // Creating an ArrayList of values to add
+		    ArrayList<Double> values = new ArrayList<>();
+		    
+		    // Handle 0.0 as "no value"
+		    values.add(loadAdditionalCharges.getDetention_value() == 0.0 ? 0.0 : loadAdditionalCharges.getDetention_value());
+		    values.add(loadAdditionalCharges.getExtra_stop_charge() == 0.0 ? 0.0 : loadAdditionalCharges.getExtra_stop_charge());
+		    values.add(loadAdditionalCharges.getLayover() == 0.0 ? 0.0 : loadAdditionalCharges.getLayover());
+		    values.add(loadAdditionalCharges.getLumper_value() == 0.0 ? 0.0 : loadAdditionalCharges.getLumper_value());
+		    values.add(loadAdditionalCharges.getScale_value() == 0.0 ? 0.0 : loadAdditionalCharges.getScale_value());
+		    values.add(loadAdditionalCharges.getTrailer_wash() == 0.0 ? 0.0 : loadAdditionalCharges.getTrailer_wash());
+
+		    // Adding each value to finalAmount
+		    for (double value : values) {
+		        finalAmount += value;
+		    }
+
+		    logger.info("Final Value: " + finalAmount);  // Output: Final Value: calculated value
+		    return finalAmount;
+		}
+	 
+	 
+	 public Boolean deleteFileFromLocalAndDrive() {
+		 return null;
+	 }
+	 public static MultipartFile convertImageToPdfUsingIText(MultipartFile imageFile) throws Exception {
+		    Document document = new Document();
+		    ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
+		    PdfWriter.getInstance(document, pdfOutputStream);
+		    document.open();
+
+		    Image image = Image.getInstance(imageFile.getBytes());
+		    image.setAlignment(Image.ALIGN_CENTER);
+		    image.scaleToFit(600, 790); // Resize to fit page if needed
+		    document.add(image);
+//		    Image image = Image.getInstance(imageFile.getBytes());
+//		    document.setPageSize(new Rectangle(image.getScaledWidth(), image.getScaledHeight()));
+//		    document.newPage(); // Add a new page after setting the custom size
+//		    document.add(image);
+
+		    document.close();
+
+		    byte[] pdfBytes = pdfOutputStream.toByteArray();
+		    return new MockMultipartFile(
+		            "file",
+		            imageFile.getOriginalFilename().replaceAll("\\.(jpg|jpeg|png|bmp|gif)$", ".pdf"),
+		            "application/pdf",
+		            pdfBytes
+		    );
+		}
+	 public static boolean isImage(MultipartFile file) {
+		    if (file == null || file.isEmpty()) {
+		        return false;
+		    }
+
+		    String contentType = file.getContentType();
+		    if (contentType != null && contentType.startsWith("image/")) {
+		        try {
+		            BufferedImage image = ImageIO.read(file.getInputStream());
+		            if (image == null) {
+		                System.out.println("Rejected file: " + file.getOriginalFilename() + " - Not a valid image content");
+		                return false;
+		            }
+		            return true;
+		        } catch (IOException e) {
+		            System.out.println("IOException while validating image: " + file.getOriginalFilename());
+		            return false;
+		        }
+		    }
+
+		    return false;
+		}
+
+
+
 }

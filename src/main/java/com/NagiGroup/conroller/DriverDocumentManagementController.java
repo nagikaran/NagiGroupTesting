@@ -3,6 +3,10 @@ package com.NagiGroup.conroller;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -11,9 +15,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,8 +32,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.NagiGroup.dto.driverDocument.DriverDocumentManagementDto;
 import com.NagiGroup.dto.subFolder.SubFolderDto;
+import com.NagiGroup.model.DriverDocumentManagementBulkInsertModel;
 import com.NagiGroup.model.DriverDocumentManagementModel;
 import com.NagiGroup.model.DriverDocumentManagementUpdateModel;
+import com.NagiGroup.model.driverDocumement.DriverDocumentDeleteModel;
 import com.NagiGroup.model.driverDocumement.DriverDocumentDownloadModel;
 import com.NagiGroup.service.DriverDocumentManagementService;
 import com.NagiGroup.utility.ApiResponse;
@@ -39,12 +48,12 @@ import io.swagger.v3.oas.annotations.Operation;
 public class DriverDocumentManagementController {
 //	private Logger infoLogger = Logger.getLogger("info");
 	 private static final Logger logger = LoggerFactory.getLogger(DriverDocumentManagementController.class);
-	
+	 @Autowired
 	 public DriverDocumentManagementService driverDocumentManagementService;
-	@Autowired
-	public DriverDocumentManagementController(DriverDocumentManagementService driverDocumentManagementService) {
-		this.driverDocumentManagementService=driverDocumentManagementService;
-	}
+	
+//	public DriverDocumentManagementController(DriverDocumentManagementService driverDocumentManagementService) {
+//		this.driverDocumentManagementService=driverDocumentManagementService;
+//	}
 	
 	@PostMapping(value = "/insert" ,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)	
 	@Operation(summary = "function = insert_driver_document")
@@ -91,7 +100,7 @@ public class DriverDocumentManagementController {
 		try {
 		//	D:\NAGI_GROUP\YEAR_2025\MARCH\David\DISPATCH RECORD
 			String base_url = PropertiesReader.getProperty("constant", "BASEURL_FOR_YEAR");
-			String base_path_for_docment = base_url+"_"+documentDownloadModel.getYear()+"/"+documentDownloadModel.getMonth().toUpperCase()+"/"+documentDownloadModel.getDriver_name()+"/"+documentDownloadModel.getSub_folder_name()+"/";
+			String base_path_for_docment = base_url+"_"+documentDownloadModel.getYear()+"/"+documentDownloadModel.getMonth()+"/"+documentDownloadModel.getDriver_name()+"/"+documentDownloadModel.getSub_folder_name()+"/";
 			System.out.println("base_path_for_docment: "+base_path_for_docment);
 			File file = new File(base_path_for_docment + documentDownloadModel.getDocument_name());
 			if (!file.exists()) {
@@ -116,5 +125,53 @@ public class DriverDocumentManagementController {
 		return driverDocumentManagementService.driverDocumentManagemeInsertForSpecifedMonth(driverDocumentManagementModel,request);
 	
 	}
+    
+    @PostMapping(value = "/insert/bulk/month_wise" ,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)	
+	@Operation(summary = "function = insert_driver_document")
+	public ApiResponse<Integer>  driverDocumentManagemeBulkInsert(@ModelAttribute DriverDocumentManagementBulkInsertModel documentManagementBulkInsertModel,HttpServletRequest request) {
+		
+		return driverDocumentManagementService.driverDocumentManagemeBulkInsert(documentManagementBulkInsertModel,request);
+	
+	}
+    
+    @PostMapping(value = "/delete_document")	
+	@Operation(summary = "function = mark_driver_document_as_deleted")
+	public ApiResponse<Integer>  deleteDocument(@RequestBody DriverDocumentDeleteModel documentDeleteModel,HttpServletRequest request) {
+		
+		return driverDocumentManagementService.deleteDocument(documentDeleteModel,request);
+	
+	}
+    
+    @PostMapping("/view-document")
+    public ResponseEntity<Resource> viewDocument(@RequestBody DriverDocumentDownloadModel documentDownloadModel) throws IOException {
+        String base_url = PropertiesReader.getProperty("constant", "BASEURL_FOR_YEAR");
+        String base_path_for_document = base_url + "_" + documentDownloadModel.getYear() + "/"
+                + documentDownloadModel.getMonth() + "/"
+                + documentDownloadModel.getDriver_name() + "/"
+                + documentDownloadModel.getSub_folder_name() + "/";
+
+        String documentName = documentDownloadModel.getDocument_name();
+        System.out.println("path: "+base_path_for_document + documentName);
+        File file = new File(base_path_for_document + documentName);
+
+        if (!file.exists()) {
+            return ResponseEntity.status(404).body(null);
+        }
+
+        Path filePath = file.toPath();
+        Resource resource = new UrlResource(filePath.toUri());
+
+        // Detect content type
+        String contentType = Files.probeContentType(filePath);
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + documentName + "\"")
+                .body(resource);
+    }
+
 
 }

@@ -111,7 +111,9 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:3000","http://localhost:3001","http://localhost:4000","http://localhost:5173","http://192.168.236.104:3000")); // Allow frontend requests
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:3000","http://localhost:3001","http://localhost:4000","http://localhost:5173","http://localhost:4000","http://localhost:5174","http://192.168.236.104:3000","https://transpot-myqj.vercel.app/",
+        		"https://transpot-myqj.vercel.app/","https://transpot-myqj.vercel.app/",
+        		"https://transpot-myqj.vercel.app/")); // Allow frontend requests
         configuration.setAllowedHeaders(List.of("*")); // Allow all headers
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Explicitly allow standard methods
         configuration.setAllowCredentials(true); // Allow cookies/auth headers

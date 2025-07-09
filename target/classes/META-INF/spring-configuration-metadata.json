@@ -4,7 +4,7 @@
       "name": "postgresql.datasource.role",
       "type": "javax.sql.DataSource",
       "sourceType": "com.NagiGroup.config.db.DBConfig",
-      "sourceMethod": "dataSourceWEB()"
+      "sourceMethod": "public javax.sql.DataSource dataSourceWEB() "
     }
   ],
   "properties": [],

@@ -81,6 +81,34 @@ public class DbContextService implements com.NagiGroup.connection.web.DbContextS
 			throw e;
 		}
 	}
+
+
+
+	@Override
+	public <T> T QueryToFirst(String query, Class<T> typeRef) {
+		try {
+			T resultSetString = jdbcTemplateRoleBasedAuthentication.queryForObject(query, 
+								BeanPropertyRowMapper.newInstance(typeRef));
+			return resultSetString;
+		} catch (Exception e) {
+			throw e;
+		}
+	}
+
+
+
+	@Override
+	@SuppressWarnings("deprecation")
+	public long QueryToFirstWithLong(String query, Object[] paramsArray) {
+		long result = 0L;
+	    try {
+	        result = jdbcTemplateRoleBasedAuthentication.queryForObject(query, paramsArray, Long.class);
+	    } catch (Exception ex) {
+	        ex.printStackTrace();
+	        throw ex;
+	    }
+	    return result;
+	}
 	
 
 }

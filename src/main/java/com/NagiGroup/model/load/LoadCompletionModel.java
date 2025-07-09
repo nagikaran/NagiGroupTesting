@@ -19,7 +19,6 @@ public class LoadCompletionModel {
 	private double lumper_value;
 	private int lumper_paid_by;
 	private double detention_value;
-	private double detention_hours;
 	private double scale_value;
 	private double extra_stop_charge;
 	private double trailer_wash;
@@ -28,15 +27,14 @@ public class LoadCompletionModel {
 	private short detention_at;
 	private int company_id;
 	private double amount; 
+	private double layover;
+	private boolean is_detention;
+	private boolean is_layover;
+	
 	
 	@Nullable
 	 private MultipartFile pod;
 	
-	@Nullable
-	 private MultipartFile lumper_reciept;
-	
-	@Nullable
-	 private MultipartFile scale_reciept;
 	
 	
 

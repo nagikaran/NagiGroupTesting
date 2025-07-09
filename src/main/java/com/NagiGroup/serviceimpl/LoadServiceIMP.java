@@ -4,10 +4,14 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.NagiGroup.dto.companyDetails.CompanyNameDto;
+import com.NagiGroup.dto.load.LoadAssignmentDocumentDto;
 import com.NagiGroup.dto.load.LoadDto;
+import com.NagiGroup.dto.load.LoadStatusSummaryDto;
+import com.NagiGroup.model.load.CancelLoadModel;
+import com.NagiGroup.model.load.LoadAdditionalCharges;
 import com.NagiGroup.model.load.LoadCompletionModel;
 import com.NagiGroup.model.load.LoadModel;
 import com.NagiGroup.model.load.LoadStatusModel;
@@ -15,11 +19,12 @@ import com.NagiGroup.model.load.LoadUpdateModel;
 import com.NagiGroup.repository.LoadRepository;
 import com.NagiGroup.service.LoadService;
 import com.NagiGroup.utility.ApiResponse;
+
 @Service
 public class LoadServiceIMP implements LoadService {
 	
 	private LoadRepository loadRepository;
-	@Autowired
+	
 	public LoadServiceIMP(LoadRepository loadRepository) {
 		this.loadRepository=loadRepository;
 	}
@@ -51,7 +56,7 @@ public class LoadServiceIMP implements LoadService {
 	@Override
 	public ApiResponse<Integer> assignLoad(LoadStatusModel loadStatusModel, HttpServletRequest request) {
 		// TODO Auto-generated method stub
-		return null;
+		return loadRepository.assignLoad(loadStatusModel, request);
 	}
 
 	@Override
@@ -76,6 +81,49 @@ public class LoadServiceIMP implements LoadService {
 	public ApiResponse<Integer> saveDocument(LoadCompletionModel loadCompletionModel, HttpServletRequest request) {
 		// TODO Auto-generated method stub
 		return loadRepository.saveDocument(loadCompletionModel, request);
+	}
+
+	@Override
+	public ApiResponse<List<LoadDto>> getLoadByStatusId(int status_id) {
+		// TODO Auto-generated method stub
+		return loadRepository.getLoadByStatusId( status_id) ;
+	}
+
+	@Override
+	public ApiResponse<LoadStatusSummaryDto> getLoadCountAsPerTheStatus() {
+		// TODO Auto-generated method stub
+		return loadRepository.getLoadCountAsPerTheStatus();
+	}
+
+	@Override
+	public ApiResponse<List<CompanyNameDto>> geAllCompanyName() {
+		// TODO Auto-generated method stub
+		return  loadRepository.getAllCompanyName();
+	}
+
+	@Override
+	public ApiResponse<LoadAssignmentDocumentDto> getLoadDetailsForAssignment(int load_id, String load_number) {
+		// TODO Auto-generated method stub
+		return loadRepository.getLoadDetailsForAssignment(load_id,load_number);
+	
+	}
+
+	@Override
+	public ApiResponse<Integer> requestToInvoice(LoadAdditionalCharges loadAdditionalCharges, HttpServletRequest request) {
+		        // TODO Auto-generated method stub
+				return loadRepository.requestToInvoice(loadAdditionalCharges,request);			
+	}
+
+	@Override
+	public ApiResponse<Integer> cancelLoad(CancelLoadModel cancelLoadModel, HttpServletRequest request) {
+		// TODO Auto-generated method stub
+		return loadRepository.cancelLoad(cancelLoadModel,request);
+	}
+
+	@Override
+	public ApiResponse<Integer> requestToInvoiceForTonu(CancelLoadModel cancelLoadModel, HttpServletRequest request) {
+		// TODO Auto-generated method stub
+		return loadRepository.requestToInvoiceForTonu(cancelLoadModel,request);
 	}
 
 }

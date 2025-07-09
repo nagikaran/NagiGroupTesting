@@ -1,10 +1,5 @@
 package com.NagiGroup.model.driverDocumement;
 
-import org.springframework.lang.Nullable;
-import org.springframework.web.multipart.MultipartFile;
-
-import com.NagiGroup.model.load.LoadCompletionModel;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
