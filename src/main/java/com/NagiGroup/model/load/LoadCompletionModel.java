@@ -27,9 +27,12 @@ public class LoadCompletionModel {
 	private short detention_at;
 	private int company_id;
 	private double amount; 
-	private double layover;
-	private boolean is_detention;
-	private boolean is_layover;
+	private double layover_value;
+	private boolean detention_flag;
+	private boolean layover_flag;
+	private boolean log_applicable_flag;
+	
+	private int user_id;
 	
 	
 	@Nullable

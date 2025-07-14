@@ -40,6 +40,7 @@ public class LoadDto {
 		private int trailer_used;
 		private int status_id;
 		private int company_id;
+		private Boolean tonu;
 		
 	public int getCompany_id() {
 		return company_id;
@@ -192,6 +193,12 @@ public class LoadDto {
 	}
 	public void setScale_price(Double scale_price) {
 		this.scale_price = scale_price;
+	}
+	public Boolean getTonu() {
+		return tonu;
+	}
+	public void setTonu(Boolean tonu) {
+		this.tonu = tonu;
 	}
 	
 	
