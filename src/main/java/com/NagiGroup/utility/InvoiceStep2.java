@@ -157,15 +157,28 @@ content8.stroke();
 
 content8.close();
 
-PDPageContentStream content9 = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true);
+//PDPageContentStream content9 = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true);
 
 //Centered Description Row
-content9.beginText();
-content9.setFont(PDType1Font.HELVETICA, 12);
-content9.newLineAtOffset(125, 450);
-content9.showText("LOAD # 6750866");
-content9.endText();
-content9.close();
+//content9.beginText();
+//content9.setFont(PDType1Font.HELVETICA, 12);
+//content9.newLineAtOffset(125, 450);
+//content9.showText("LOAD # LOAD-TESTING-DEMO-00110");
+//content9.endText();
+//content9.close();
+String loadText = "LOAD # " + "LOAD-TESTING";
+PDType1Font helvetica = PDType1Font.HELVETICA;
+float fontSize = 12;
+
+try (PDPageContentStream content9 = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true)) {
+    content9.beginText();
+    content9.setFont(helvetica, fontSize);
+    content9.newLineAtOffset(60, 450);  // ✅ Extreme left inside box
+    content9.showText(loadText);
+    content9.endText();
+}
+
+
 
 PDPageContentStream content10 = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true);
 
@@ -203,7 +216,7 @@ content12.stroke();
 content12.close();
 
             // Save PDF
-            document.save("D:\\NAGI_GROUP\\invoice-sample\\invoice_step2.pdf");
+            document.save("C:\\NAGI_GROUP\\invoice-sample\\invoice_step2.pdf");
             System.out.println("Step 2 PDF created successfully!");
         } catch (IOException e) {
             e.printStackTrace();

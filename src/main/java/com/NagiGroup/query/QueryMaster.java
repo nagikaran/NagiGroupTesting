@@ -60,6 +60,7 @@ public final class QueryMaster {
 	public static String update_driver_document = "select * from update_driver_document(?,?,?,?,?,?,?)";
 	public static String insert_driver_financial_summary = "select * from insert_driver_financial_summary(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	public static String get_loads_by_destinations_order_as_per_load_type = "select * from get_loads_by_destinations_order_as_per_load_type(?)";
+	public static String handle_load_completion_test="select * from handle_load_completion_test(?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	
 	
 }

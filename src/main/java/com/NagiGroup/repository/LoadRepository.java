@@ -45,7 +45,6 @@ import com.NagiGroup.service.MailService;
 import com.NagiGroup.utility.ApiResponse;
 import com.NagiGroup.utility.CommonUtility;
 import com.NagiGroup.utility.PropertiesReader;
-import com.itextpdf.text.log.SysoCounter;
 
 @Repository
 public class LoadRepository {
@@ -214,7 +213,7 @@ public class LoadRepository {
 						try {
 							String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name, driverFolderId);
 							MultipartFile multipartFile = CommonController.convertFileToMultipartFile(savedFile);
-							GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
+							String uploadFileToDrive = GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
 						} catch (IOException ioEx) {
 							// Handle file conversion or upload errors
 							System.err.println("Failed during Google Drive operations: " + ioEx.getMessage());
@@ -799,6 +798,7 @@ public class LoadRepository {
 						"Load cannot be Mark as Completed.As Current status is not In Progress", false, 0, 0);
 
 			}
+			loadCompletionModel.getCompany_id();
 			logger.info("loadComplitionModel: " + loadCompletionModel);
 			Object load_completion_param[] = { 
 					loadCompletionModel.getLoad_id(),
@@ -807,16 +807,19 @@ public class LoadRepository {
 					loadCompletionModel.getLumper_value(), 
 					loadCompletionModel.getLumper_paid_by(),
 					loadCompletionModel.getDetention_value(), 
-					loadCompletionModel.is_detention(),
-					loadCompletionModel.is_layover(),
-					loadCompletionModel.getLayover(),
+					loadCompletionModel.isDetention_flag(),
+					loadCompletionModel.isLayover_flag(),
+					loadCompletionModel.getLayover_value(),
 					loadCompletionModel.getScale_value(),
 					loadCompletionModel.getExtra_stop_charge(),
-					loadCompletionModel.getTrailer_wash()
-
+					loadCompletionModel.getTrailer_wash(),
+					loadCompletionModel.isLog_applicable_flag()
+		
 			};
 
-			int load_complition_status = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.handle_load_completion,
+//			int load_complition_status = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.handle_load_completion,
+//					load_completion_param);
+			int load_complition_status = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.handle_load_completion_test,
 					load_completion_param);
 			System.out.println("load_complition_status: "+load_complition_status);
 			if (loadCompletionModel.getPod() != null) {
@@ -907,12 +910,12 @@ public class LoadRepository {
 					logger.info("LoadRepository : markLoadComplete generateInvoicePdf end");
 					logger.info("LoadRepository : markLoadComplete mergePDFDocuments start");
 					String invoice = "D:\\NAGI_GROUP\\invoice-sample\\invoice_step2.pdf";
-					invoice = "D:\\NAGI_GROUP\\invoice\\" + loadCompletionModel.getLoad_number() + "_invoice.pdf";
+					invoice = "C:\\NAGI_GROUP\\invoice\\" + loadCompletionModel.getLoad_number() + "_invoice.pdf";
 					List<String> paths = new ArrayList<String>();
 					paths.add(invoice);
 					paths.add(source_path_for_roc);
 					paths.add(source_path_for_pod);
-					String invoice_file_path = "D:\\NAGI_GROUP\\INVOICES\\" + loadCompletionModel.getLoad_number()
+					String invoice_file_path = "C:\\NAGI_GROUP\\INVOICES\\" + loadCompletionModel.getLoad_number()
 							+ "\\" + loadCompletionModel.getLoad_number() + ".pdf";
 					CommonUtility.mergePDFDocuments(paths, invoice_file_path);
 					logger.info("LoadRepository : markLoadComplete mergePDFDocuments end");
@@ -1553,13 +1556,13 @@ public class LoadRepository {
 				cancelLoadModel.getNew_load_number());
 				logger.info("LoadRepository : requestToInvoice generateInvoicePdf end");
 				logger.info("LoadRepository : requestToInvoice mergePDFDocuments start");
-				String invoice = "D:\\NAGI_GROUP\\invoice-sample\\invoice_step2.pdf";
-				invoice = "D:\\NAGI_GROUP\\invoice\\" + cancelLoadModel.getNew_load_number() + "_invoice.pdf";
+				String invoice = "C:\\NAGI_GROUP\\invoice-sample\\invoice_step2.pdf";
+				invoice = "C:\\NAGI_GROUP\\invoice\\" + cancelLoadModel.getNew_load_number() + "_invoice.pdf";
 				List<String> paths = new ArrayList<String>();
 				paths.add(invoice);
 				paths.add(source_path_for_roc);
 				
-				String invoice_file_path = "D:\\NAGI_GROUP\\INVOICES\\" + cancelLoadModel.getNew_load_number()
+				String invoice_file_path = "C:\\NAGI_GROUP\\INVOICES\\" + cancelLoadModel.getNew_load_number()
 						+ "\\" +cancelLoadModel.getNew_load_number() + ".pdf";
 				CommonUtility.mergePDFDocuments(paths, invoice_file_path);
 				logger.info("LoadRepository : requestToInvoice mergePDFDocuments end");

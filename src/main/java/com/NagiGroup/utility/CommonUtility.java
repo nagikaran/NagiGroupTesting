@@ -31,7 +31,6 @@ import com.NagiGroup.dto.companyDetails.CompanyDetailsDto;
 import com.NagiGroup.model.load.LoadAdditionalCharges;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.Image;
-import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.PdfWriter;
 
 public class CommonUtility {
@@ -278,15 +277,28 @@ public class CommonUtility {
 
 	content8.close();
 
-	PDPageContentStream content9 = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true);
+	//PDPageContentStream content9 = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true);
 
 	//Centered Description Row
-	content9.beginText();
-	content9.setFont(PDType1Font.HELVETICA, 12);
-	content9.newLineAtOffset(125, 450);
-	content9.showText("LOAD # "+loadNumber);
-	content9.endText();
-	content9.close();
+	//Load Number
+//	content9.beginText();
+//	content9.setFont(PDType1Font.HELVETICA, 12);
+//	content9.newLineAtOffset(125, 450);
+//	content9.showText("LOAD # "+loadNumber);
+//	content9.endText();
+//	content9.close();
+	String loadText = "LOAD # " + loadNumber;
+	PDType1Font helvetica = PDType1Font.HELVETICA;
+	float fontSize = 12;
+
+	try (PDPageContentStream content9 = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true)) {
+	    content9.beginText();
+	    content9.setFont(helvetica, fontSize);
+	    content9.newLineAtOffset(60, 450);  // ✅ Extreme left inside box
+	    content9.showText(loadText);
+	    content9.endText();
+	}
+
 
 	PDPageContentStream content10 = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true);
 
@@ -323,7 +335,7 @@ public class CommonUtility {
 	content12.stroke();
 	content12.close();
 
-	String folderPath = "D:\\NAGI_GROUP\\invoice\\";
+	String folderPath = "C:\\NAGI_GROUP\\invoice\\";
 	File directory = new File(folderPath);
 	if (!directory.exists()) {
 	    directory.mkdirs(); // creates the folder if it doesn't exist
