@@ -175,7 +175,7 @@ public class DriverDocumentManagementRepository   {
 	                    // Upload to Google Drive
 	                    String subFolderId = GoogleDriveService.getOrCreateFolder(doc.getSubFolderName().trim(), driverFolderId);
 	                    MultipartFile multipartFile = CommonController.convertFileToMultipartFile(savedFile);
-	                    GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
+	                    String drive_file_id = GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
 	                    
 	                    // Insert document details into the database
 	                    Object[] param = {
@@ -184,9 +184,12 @@ public class DriverDocumentManagementRepository   {
 	                        targetFolder,
 	                        doc.getSubFolderId(),
 	                        driverDocumentManagementModel.getDriver_id(),
-	                        driverDocumentManagementModel.getLoad_number()
+	                        driverDocumentManagementModel.getLoad_number(),
+	                        drive_file_id
+	                        
 	                    };
-	                    dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document, param);
+//	                    dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document, param);
+	                    dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_drive_fie_id, param);
 	                    
 	                } catch (Exception e) {
 	                    e.printStackTrace();
@@ -424,7 +427,7 @@ if (folderName == null) {
 	                    // Upload to Google Drive
 	                    String subFolderId = GoogleDriveService.getOrCreateFolder(doc.getSubFolderName().trim(), driverFolderId);
 	                    MultipartFile multipartFile = CommonController.convertFileToMultipartFile(savedFile);
-	                    GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
+	                    String drive_file_id = GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
 	                    
 	                    // Insert document details into the database
 	                    Object[] param = {
@@ -434,9 +437,11 @@ if (folderName == null) {
 	                        doc.getSubFolderId(),
 	                        driverDocumentManagementModel.getDriver_id(),
 	                        month,
-	                        driverDocumentManagementModel.getLoad_number()
+	                        driverDocumentManagementModel.getLoad_number(),
+	                        drive_file_id
 	                    };
-	                    dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_with_month, param);
+//	                    dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_with_month, param);
+	                    dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_with_month_drive_file_id, param);
 	                    
 	                } catch (Exception e) {
 	                    e.printStackTrace();
@@ -613,10 +618,11 @@ if (folderName == null) {
 	                logger.info("Saved file locally: {}", newFilePath);
 
 	                // Upload to Google Drive
+	                String drive_file_id = "";
 	                try {
 	                	
 	                    MultipartFile convertedFile = CommonController.convertFileToMultipartFile(savedFile);
-	                    GoogleDriveService.uploadFileToDrive(convertedFile, currentSubFolderId);
+	                     drive_file_id = GoogleDriveService.uploadFileToDrive(convertedFile, currentSubFolderId);
 	                    logger.info("Uploaded file to Google Drive: {}", newFileName);
 	                } catch (Exception e) {
 	                    logger.error("Failed during Google Drive upload", e);
@@ -633,9 +639,11 @@ if (folderName == null) {
 	                            2,
 	                            documentManagementBulkInsertModel.getDriver_id(),
 	                            documentManagementBulkInsertModel.getMonth(),
-	                            documentManagementBulkInsertModel.getLoad_number()
+	                            documentManagementBulkInsertModel.getLoad_number(),
+	                            drive_file_id
 	                    };
-	                    int insertedId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_with_month, params);
+//	                    int insertedId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_with_month, params);
+	                    int insertedId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_with_month_drive_file_id, params);
 	                   
 	                    
 	                    logger.info("Inserted document ID: {}", insertedId);
@@ -672,10 +680,11 @@ if (folderName == null) {
 	                logger.info("Saved file locally: {}", newFilePath);
 
 	                // Upload to Google Drive
+	                String drive_file_id = "";
 	                try {
 	                	
 	                    MultipartFile convertedFile = CommonController.convertFileToMultipartFile(savedFile);
-	                    GoogleDriveService.uploadFileToDrive(convertedFile, currentSubFolderId);
+	                     drive_file_id = GoogleDriveService.uploadFileToDrive(convertedFile, currentSubFolderId);
 	                    logger.info("Uploaded file to Google Drive: {}", newFileName);
 	                } catch (Exception e) {
 	                    logger.error("Failed during Google Drive upload", e);
@@ -692,9 +701,11 @@ if (folderName == null) {
 	                            6,
 	                            documentManagementBulkInsertModel.getDriver_id(),
 	                            documentManagementBulkInsertModel.getMonth(),
-	                            documentManagementBulkInsertModel.getLoad_number()
+	                            documentManagementBulkInsertModel.getLoad_number(),
+	                            drive_file_id
 	                    };
-	                    int insertedId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_with_month, params);
+//	                    int insertedId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_with_month, params);
+	                    int insertedId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_with_month_drive_file_id, params);
 	                   
 	                    
 	                    logger.info("Inserted document ID: {}", insertedId);

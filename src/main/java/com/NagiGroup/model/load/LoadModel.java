@@ -38,6 +38,7 @@ public class LoadModel {
 	private int assign_to;
 	private int trailer_used;
 	private int company_id;
+	private String drive_file_id;
 	 @Nullable
 	  private MultipartFile roc;
 	

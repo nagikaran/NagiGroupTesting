@@ -61,6 +61,7 @@ public final class QueryMaster {
 	public static String insert_driver_financial_summary = "select * from insert_driver_financial_summary(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	public static String get_loads_by_destinations_order_as_per_load_type = "select * from get_loads_by_destinations_order_as_per_load_type(?)";
 	public static String handle_load_completion_test="select * from handle_load_completion_test(?,?,?,?,?,?,?,?,?,?,?,?,?)";
-	
+	public static String insert_driver_document_drive_fie_id = "select * from insert_driver_document_drive_fie_id(?,?,?,?,?,?,?)";
+	public static String insert_driver_document_with_month_drive_file_id = "select * from insert_driver_document_with_month_drive_file_id(?,?,?,?,?,?,?,?)";
 	
 }

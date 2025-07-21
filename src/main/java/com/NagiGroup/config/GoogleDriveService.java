@@ -178,7 +178,7 @@ public class GoogleDriveService {
                 .setFields("id, name, webViewLink")
                 .execute();
 
-        return "Uploaded File ID: " + uploadedFile.getId() + " | Link: " + uploadedFile.getWebViewLink();
+        return uploadedFile.getId();
     }
 
     public static String getOrCreateFolder(String folderName, String parentFolderId) throws IOException, GeneralSecurityException {

@@ -191,7 +191,7 @@ public class LoadRepository {
 				// Read file data BEFORE the async block
 				byte[] fileBytes = loadModel.getRoc().getBytes(); // ✅ Safe: temp file still exists
 				String originalFileName = loadModel.getRoc().getOriginalFilename();
-
+				//String drive_file_id = "";
 				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
 					try {
 						String targetFolder = driverFolder + "/" + sub_folder_name;
@@ -210,10 +210,11 @@ public class LoadRepository {
 						}
 
 						// Upload to Google Drive
+						String	drive_file_id = "";
 						try {
 							String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name, driverFolderId);
 							MultipartFile multipartFile = CommonController.convertFileToMultipartFile(savedFile);
-							String uploadFileToDrive = GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
+							drive_file_id  = GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
 						} catch (IOException ioEx) {
 							// Handle file conversion or upload errors
 							System.err.println("Failed during Google Drive operations: " + ioEx.getMessage());
@@ -233,10 +234,14 @@ public class LoadRepository {
 									targetFolder,
 									2,
 									loadModel.getAssign_to(),
-									loadModel.getLoadNumber()
+									loadModel.getLoadNumber(),
+									drive_file_id
 									};
-							dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document,
+//							dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document,
+//									param_for_document_insert);
+							dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_drive_fie_id,
 									param_for_document_insert);
+							
 						} catch (Exception dbEx) {
 							System.err.println("Unexpected database error: " + dbEx.getMessage());
 							dbEx.printStackTrace();
@@ -689,14 +694,7 @@ public class LoadRepository {
 									loadStatusModel.getDriver_id(),
 									loadStatusModel.getLoad_number()
 									};
-							System.out.println("value for the update:  "+Arrays.toString(param_for_document_update));
-							System.out.println("driver_documents_id: " + loadStatusModel.getDriver_documents_id());
-							System.out.println("document_name: " + CommonController.getNewFileNameWithoutExtension(newFileName));
-							System.out.println("original_document_name: " + newFileName);
-							System.out.println("document_path: " + targetFolder);
-							System.out.println("sub_folder_id: " + 2);
-							System.out.println("driver_id: " + loadStatusModel.getDriver_id());
-							System.out.println("load_number: " + loadStatusModel.getLoad_number());
+						
 							dbContextserviceBms.QueryToFirstWithInt(QueryMaster.update_driver_document,
 									param_for_document_update);
 						} catch (Exception dbEx) {
@@ -823,6 +821,8 @@ public class LoadRepository {
 					load_completion_param);
 			System.out.println("load_complition_status: "+load_complition_status);
 			if (loadCompletionModel.getPod() != null) {
+				/**/
+				
 				String newFileName = loadCompletionModel.getLoad_number() + "_pod";
 				newFileName = CommonController.renameFileWithExtension(loadCompletionModel.getPod(), newFileName);
 				String newFileNameWithoutExtension = CommonController.getNewFileNameWithoutExtension(newFileName);
@@ -833,6 +833,131 @@ public class LoadRepository {
 				String driverFolder = yearFolder + "/" + month + "/" + loadCompletionModel.getDriver_name();
 				String targetFolder = driverFolder + "/"
 						+ PropertiesReader.getProperty("constant", "BASEURL_FOR_SUB_FOLDER_POD_LUMPER_RECEIPT_SCALE");
+				String no_log_folder_path = "";
+
+				if (!loadCompletionModel.isLog_applicable_flag()) {
+				    // Original ROC folder (e.g., /driverFolder/ROC)
+				    targetFolder = driverFolder + sub_folder_name_for_roc;
+
+				    // No_Log folder path
+				    no_log_folder_path = rootFolder + "_" + Year.now().getValue() + "_No_Log/" 
+				                       + month + "/" 
+				                       + loadCompletionModel.getDriver_name() 
+				                       + sub_folder_name_for_roc;
+
+				    logger.info("loadCompletionModel: no_log_folder_path: " + no_log_folder_path);
+
+				    try {
+				        // Create target directory if it doesn't exist
+				        File folder = new File(no_log_folder_path);
+				        if (!folder.exists()) {
+				            folder.mkdirs();
+				        }
+
+				        // File name
+				        String fileName = loadCompletionModel.getLoad_number() + "_roc.pdf";
+
+				        // Use Paths.get to avoid manual slashes
+				        Path sourcePath = Paths.get(targetFolder, fileName);
+				        Path targetPath = Paths.get(no_log_folder_path, fileName);
+
+				        // Copy then delete
+				        Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+				        Files.deleteIfExists(sourcePath);
+
+				        logger.info("Moved file from {} to {}", sourcePath, targetPath);
+
+				    } catch (IOException e) {
+				        logger.error("Error while moving ROC file to No_Log folder: " + e.getMessage(), e);
+				    }
+				    logger.info("loadCompletionModel: Moving File to No Log Start For Drive");
+				 // Setup Google Drive folders
+					String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
+					String yearFolderId = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue(),
+							googleDriveRootFolderId);
+					String monthFolderId = GoogleDriveService.getOrCreateFolder(month, yearFolderId);
+					String driverFolderId = GoogleDriveService.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(),
+							monthFolderId);
+					String subFolderId = GoogleDriveService.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(),
+							sub_folder_name_for_roc);
+					
+					
+					
+	// Run the copy/upload logic asynchronously
+					CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+						try {
+							
+							// Define new file name and path
+							String rocDocName = loadCompletionModel.getLoad_number() + "_roc.pdf"; // You can format this name
+																								// as needed
+							
+							// Upload to Google Drive
+							try {
+								
+								String fileId = GoogleDriveService.findFileIdInFolder(rocDocName,
+										subFolderId);
+
+	//							File savedFile = targetPath.toFile();
+								String yearFolderIdForNoLog = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue()+"_NoLog",
+										googleDriveRootFolderId);
+								String monthFolderIdNoLog = GoogleDriveService.getOrCreateFolder(month, yearFolderIdForNoLog);
+								String driverFolderIdmonthFolderIdNoLog = GoogleDriveService.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(),
+										monthFolderIdNoLog);
+								String subFolderIdNoLog = GoogleDriveService.getOrCreateFolder(sub_folder_name_for_roc,
+										driverFolderIdmonthFolderIdNoLog);
+//									
+//								String newSubFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name,
+//										driverFolderId);
+								if (fileId != null) {
+									GoogleDriveService.moveFileToFolder(fileId, subFolderIdNoLog,
+											rocDocName);
+								} else {
+									logger.error("File not found in old driver's folder: {}",
+											rocDocName);
+								}
+
+								// GoogleDriveService.moveFileToFolder(fileId,
+								// newSubFolderId,loadStatusModel.getFile_name());
+
+							} catch (IOException ioEx) {
+								System.err.println("Google Drive upload error: " + ioEx.getMessage());
+								ioEx.printStackTrace();
+								return;
+							}
+//							String newFileNameWithoutExtension = CommonController
+//									.getNewFileNameWithoutExtension(newFileName);
+
+							// Insert document record into DB
+							try {
+								Object[] param_for_document_update = {
+										//loadCompletionModel.getDriver_documents_id(),
+//										CommonController.getNewFileNameWithoutExtension(newFileName), //p_document_name
+//										newFileName,//p_original_document_name with extension
+//										targetFolder, //p_document_path
+										2, //p_sub_folder_id
+										loadCompletionModel.getDriver_id(),
+										loadCompletionModel.getLoad_number()
+										};
+							
+								dbContextserviceBms.QueryToFirstWithInt(QueryMaster.update_driver_document,
+										param_for_document_update);
+							} catch (Exception dbEx) {
+								System.err.println("DB error while inserting document: " + dbEx.getMessage());
+								dbEx.printStackTrace();
+							}
+
+						} catch (Exception ex) {
+							System.err.println("Unexpected error in async process: " + ex.getMessage());
+							ex.printStackTrace();
+						}
+					});
+
+					  logger.info("loadCompletionModel: Moving File to No Log End For Drive");
+				    
+				}
+
+				
+					
 
 				// Create directories if they do not exist
 				File folder = new File(targetFolder);
@@ -851,7 +976,11 @@ public class LoadRepository {
 				logger.info("LoadRepository : markLoadComplete document insert end local");
 				logger.info("LoadRepository : markLoadComplete document insert int DataBase Start");
 				// Insert document details into the database
-				Object[] param = { newFileNameWithoutExtension, newFileName, targetFolder, 6L,
+				Object[] param = { 
+						newFileNameWithoutExtension, 
+						newFileName,
+						targetFolder,
+						6L,
 						Integer.parseInt(loadCompletionModel.getDriver_id()),
 						loadCompletionModel.getLoad_number()
 						};
@@ -862,6 +991,11 @@ public class LoadRepository {
 				logger.info("LoadRepository : markLoadComplete document insert int DataBase end");
 				CompletableFuture.runAsync(() -> {
 					try {
+						/*NOW moving the fiel form log to no log folder start**/
+						logger.info("LoadRepository : markLoadComplete document moving from Log to NoLog Google Drive start");
+						
+						logger.info("LoadRepository : markLoadComplete document moving from Log to NoLog Google Drive end");
+						
 						logger.info("LoadRepository : markLoadComplete document insert Google Drive start");
 						String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
 						String yearFolderId = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue(),

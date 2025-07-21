@@ -122,8 +122,7 @@ public class FuelTicketDownloader {
 
 	public static void main(String[] args) {
 		String yourEmail = "nagigroup0076@gmail.com"; // your email
-		String yourAppPassword = "mnhl ivju dgdq rald"; // use App Password if 2FA is enabled
-
+		String yourAppPassword = "tayy fiqr rhze yurb";
 		downloadFuelTickets(yourEmail, yourAppPassword);
 	}
 }
