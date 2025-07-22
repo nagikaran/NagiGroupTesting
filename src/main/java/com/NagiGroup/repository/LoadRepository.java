@@ -30,6 +30,7 @@ import com.NagiGroup.connection.web.DbContextService;
 import com.NagiGroup.conroller.CommonController;
 import com.NagiGroup.dto.companyDetails.CompanyDetailsDto;
 import com.NagiGroup.dto.companyDetails.CompanyNameDto;
+import com.NagiGroup.dto.driverDocument.DriverDocumentDto;
 import com.NagiGroup.dto.load.LoadAssignmentDocumentDto;
 import com.NagiGroup.dto.load.LoadDto;
 import com.NagiGroup.dto.load.LoadStatusSummaryDto;
@@ -694,7 +695,7 @@ public class LoadRepository {
 									loadStatusModel.getDriver_id(),
 									loadStatusModel.getLoad_number()
 									};
-						
+							//mark load complete
 							dbContextserviceBms.QueryToFirstWithInt(QueryMaster.update_driver_document,
 									param_for_document_update);
 						} catch (Exception dbEx) {
@@ -820,11 +821,12 @@ public class LoadRepository {
 			int load_complition_status = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.handle_load_completion_test,
 					load_completion_param);
 			System.out.println("load_complition_status: "+load_complition_status);
+			 //no_log_folder_path = "";
 			if (loadCompletionModel.getPod() != null) {
 				/**/
 				
 				String newFileName = loadCompletionModel.getLoad_number() + "_pod";
-				newFileName = CommonController.renameFileWithExtension(loadCompletionModel.getPod(), newFileName);
+				String newFileNameWithExtension = CommonController.renameFileWithExtension(loadCompletionModel.getPod(), newFileName);
 				String newFileNameWithoutExtension = CommonController.getNewFileNameWithoutExtension(newFileName);
 				LocalDate currentDate = LocalDate.now();
 				String month = currentDate.getMonth().toString(); // Example: "FEBRUARY"
@@ -833,15 +835,22 @@ public class LoadRepository {
 				String driverFolder = yearFolder + "/" + month + "/" + loadCompletionModel.getDriver_name();
 				String targetFolder = driverFolder + "/"
 						+ PropertiesReader.getProperty("constant", "BASEURL_FOR_SUB_FOLDER_POD_LUMPER_RECEIPT_SCALE");
-				String no_log_folder_path = "";
+				
 
 				if (!loadCompletionModel.isLog_applicable_flag()) {
 				    // Original ROC folder (e.g., /driverFolder/ROC)
+					
+					Object[] param_to_get_document_details = {
+							loadCompletionModel.getLoad_number(),2
+					};
+					DriverDocumentDto driverDocumentDto = dbContextserviceBms.QueryToFirstWithParam(
+							QueryMaster.get_document_details_by_load_and_subfolder, param_to_get_document_details, DriverDocumentDto.class);
+					yearFolder = rootFolder + "_" + driverDocumentDto.getYear(); // Example: "documents_2025"
+				    driverFolder = yearFolder + "/" + driverDocumentDto.getMonth() + "/" + loadCompletionModel.getDriver_name();
 				    targetFolder = driverFolder + sub_folder_name_for_roc;
-
 				    // No_Log folder path
-				    no_log_folder_path = rootFolder + "_" + Year.now().getValue() + "_No_Log/" 
-				                       + month + "/" 
+				    String  no_log_folder_path = rootFolder + "_" + driverDocumentDto.getYear() + "_No_Log/" 
+				                       + driverDocumentDto.getMonth() + "/" 
 				                       + loadCompletionModel.getDriver_name() 
 				                       + sub_folder_name_for_roc;
 
@@ -873,13 +882,13 @@ public class LoadRepository {
 				    logger.info("loadCompletionModel: Moving File to No Log Start For Drive");
 				 // Setup Google Drive folders
 					String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
-					String yearFolderId = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue(),
+					String yearFolderId = GoogleDriveService.getOrCreateFolder("year_" + driverDocumentDto.getYear(),
 							googleDriveRootFolderId);
-					String monthFolderId = GoogleDriveService.getOrCreateFolder(month, yearFolderId);
+					String monthFolderId = GoogleDriveService.getOrCreateFolder(driverDocumentDto.getMonth(), yearFolderId);
 					String driverFolderId = GoogleDriveService.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(),
 							monthFolderId);
-					String subFolderId = GoogleDriveService.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(),
-							sub_folder_name_for_roc);
+					String subFolderId = GoogleDriveService.getOrCreateFolder(
+							sub_folder_name_for_roc,driverFolderId);
 					
 					
 					
@@ -898,9 +907,9 @@ public class LoadRepository {
 										subFolderId);
 
 	//							File savedFile = targetPath.toFile();
-								String yearFolderIdForNoLog = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue()+"_NoLog",
+								String yearFolderIdForNoLog = GoogleDriveService.getOrCreateFolder("year_" + driverDocumentDto.getYear()+"_NoLog",
 										googleDriveRootFolderId);
-								String monthFolderIdNoLog = GoogleDriveService.getOrCreateFolder(month, yearFolderIdForNoLog);
+								String monthFolderIdNoLog = GoogleDriveService.getOrCreateFolder(driverDocumentDto.getMonth(), yearFolderIdForNoLog);
 								String driverFolderIdmonthFolderIdNoLog = GoogleDriveService.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(),
 										monthFolderIdNoLog);
 								String subFolderIdNoLog = GoogleDriveService.getOrCreateFolder(sub_folder_name_for_roc,
@@ -924,16 +933,21 @@ public class LoadRepository {
 								ioEx.printStackTrace();
 								return;
 							}
-//							String newFileNameWithoutExtension = CommonController
-//									.getNewFileNameWithoutExtension(newFileName);
+							String newFileNameWithoutExtensionRoc = CommonController
+									.getNewFileNameWithoutExtension(loadCompletionModel.getLoad_number() + "_roc.pdf");
 
 							// Insert document record into DB
 							try {
+								/*get me the document id as per the load number and the dubfolder id*/
+								
+//								int document_id = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.get_document_details_by_load_and_subfolder,
+//										param_to_get_document_id);
+								
 								Object[] param_for_document_update = {
-										//loadCompletionModel.getDriver_documents_id(),
-//										CommonController.getNewFileNameWithoutExtension(newFileName), //p_document_name
-//										newFileName,//p_original_document_name with extension
-//										targetFolder, //p_document_path
+										driverDocumentDto.getDriver_documents_id(),
+										newFileNameWithoutExtensionRoc, //p_document_name
+										loadCompletionModel.getLoad_number() + "_roc.pdf",//p_original_document_name with extension
+										no_log_folder_path, //p_document_path
 										2, //p_sub_folder_id
 										loadCompletionModel.getDriver_id(),
 										loadCompletionModel.getLoad_number()
