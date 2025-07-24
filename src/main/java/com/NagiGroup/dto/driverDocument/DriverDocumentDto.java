@@ -11,7 +11,7 @@ public class DriverDocumentDto {
 	
 	private int driver_documents_id;
 	private int year;
-	private String month;
+	private String month_name;
 	
 	public int getDriver_documents_id() {
 		return driver_documents_id;
@@ -25,12 +25,13 @@ public class DriverDocumentDto {
 	public void setYear(int year) {
 		this.year = year;
 	}
-	public String getMonth() {
-		return month;
+	public String getMonth_name() {
+		return month_name;
 	}
-	public void setMonth(String month) {
-		this.month = month;
+	public void setMonth_name(String month_name) {
+		this.month_name = month_name;
 	}
+
 	
 	
 

@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -122,20 +124,17 @@ public class LoadRepository {
 				/*
 				 * file saving work now here i want to save the roc
 				 */
-				/*if file is image converting it into the pdf*/
+				/* if file is image converting it into the pdf */
 				MultipartFile roc = loadModel.getRoc();
 				if (roc != null && CommonUtility.isImage(roc)) {
 					logger.info("LoadRepository : Extendion : " + loadModel.getRoc().getOriginalFilename());
-				    MultipartFile rocPdf = CommonUtility.convertImageToPdfUsingIText(roc);
-				    loadModel.setRoc(rocPdf);
+					MultipartFile rocPdf = CommonUtility.convertImageToPdfUsingIText(roc);
+					loadModel.setRoc(rocPdf);
 				} else {
-				    // It's already a PDF or unsupported — skip conversion
-				    loadModel.setRoc(roc);
+					// It's already a PDF or unsupported — skip conversion
+					loadModel.setRoc(roc);
 				}
 
-				
-
-				
 				String fileNameWithoutExtension = CommonController.getFileNameWithoutExtension(loadModel.getRoc());
 				String newFileName = CommonController.renameFileWithExtension(loadModel.getRoc(),
 						loadModel.getLoadNumber() + "_roc");
@@ -192,7 +191,7 @@ public class LoadRepository {
 				// Read file data BEFORE the async block
 				byte[] fileBytes = loadModel.getRoc().getBytes(); // ✅ Safe: temp file still exists
 				String originalFileName = loadModel.getRoc().getOriginalFilename();
-				//String drive_file_id = "";
+				// String drive_file_id = "";
 				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
 					try {
 						String targetFolder = driverFolder + "/" + sub_folder_name;
@@ -211,11 +210,11 @@ public class LoadRepository {
 						}
 
 						// Upload to Google Drive
-						String	drive_file_id = "";
+						String drive_file_id = "";
 						try {
 							String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name, driverFolderId);
 							MultipartFile multipartFile = CommonController.convertFileToMultipartFile(savedFile);
-							drive_file_id  = GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
+							drive_file_id = GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
 						} catch (IOException ioEx) {
 							// Handle file conversion or upload errors
 							System.err.println("Failed during Google Drive operations: " + ioEx.getMessage());
@@ -236,13 +235,12 @@ public class LoadRepository {
 									2,
 									loadModel.getAssign_to(),
 									loadModel.getLoadNumber(),
-									drive_file_id
-									};
+									drive_file_id };
 //							dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document,
 //									param_for_document_insert);
 							dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_drive_fie_id,
 									param_for_document_insert);
-							
+
 						} catch (Exception dbEx) {
 							System.err.println("Unexpected database error: " + dbEx.getMessage());
 							dbEx.printStackTrace();
@@ -497,7 +495,7 @@ public class LoadRepository {
 
 //	@Override
 	public ApiResponse<Integer> assignLoad(LoadStatusModel loadStatusModel, HttpServletRequest request) {
-		logger.info("LoadRepository : assignLoad start hello "+loadStatusModel);
+		logger.info("LoadRepository : assignLoad start hello " + loadStatusModel);
 		CommonController commonController = new CommonController();
 		int updatedBy = 0;
 		try {
@@ -578,9 +576,7 @@ public class LoadRepository {
 						try {
 							Object[] param_for_document_insert = {
 									CommonController.getNewFileNameWithoutExtension(newFileName), newFileName,
-									targetFolder, 2, loadStatusModel.getDriver_id(),
-									loadStatusModel.getLoad_number()
-									};
+									targetFolder, 2, loadStatusModel.getDriver_id(), loadStatusModel.getLoad_number() };
 							dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document,
 									param_for_document_insert);
 						} catch (Exception dbEx) {
@@ -686,16 +682,13 @@ public class LoadRepository {
 
 						// Insert document record into DB
 						try {
-							Object[] param_for_document_update = {
-									loadStatusModel.getDriver_documents_id(),
-									CommonController.getNewFileNameWithoutExtension(newFileName), //p_document_name
-									newFileName,//p_original_document_name with extension
-									targetFolder, //p_document_path
-									2, //p_sub_folder_id
-									loadStatusModel.getDriver_id(),
-									loadStatusModel.getLoad_number()
-									};
-							//mark load complete
+							Object[] param_for_document_update = { loadStatusModel.getDriver_documents_id(),
+									CommonController.getNewFileNameWithoutExtension(newFileName), // p_document_name
+									newFileName, // p_original_document_name with extension
+									targetFolder, // p_document_path
+									2, // p_sub_folder_id
+									loadStatusModel.getDriver_id(), loadStatusModel.getLoad_number() };
+							// mark load complete
 							dbContextserviceBms.QueryToFirstWithInt(QueryMaster.update_driver_document,
 									param_for_document_update);
 						} catch (Exception dbEx) {
@@ -783,11 +776,10 @@ public class LoadRepository {
 			String source_path_for_pod = "";
 			String sub_folder_name_for_roc = PropertiesReader.getProperty("constant",
 					"BASEURL_FOR_SUB_FOLDER_DISPATCH_RECORD");
-			
-			
+
 			int updatedBy = commonController.getUserDtoDataFromToken(request);
-			
-			logger.info("updatedBy 01: "+updatedBy);
+
+			logger.info("updatedBy 01: " + updatedBy);
 			Object load_status_param[] = { loadCompletionModel.getLoad_number() };
 			int previous_status = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.get_load_status_id,
 					load_status_param);
@@ -799,34 +791,27 @@ public class LoadRepository {
 			}
 			loadCompletionModel.getCompany_id();
 			logger.info("loadComplitionModel: " + loadCompletionModel);
-			Object load_completion_param[] = { 
-					loadCompletionModel.getLoad_id(),
-					loadCompletionModel.getLoad_number(),
-					updatedBy, 
-					loadCompletionModel.getLumper_value(), 
-					loadCompletionModel.getLumper_paid_by(),
-					loadCompletionModel.getDetention_value(), 
-					loadCompletionModel.isDetention_flag(),
-					loadCompletionModel.isLayover_flag(),
-					loadCompletionModel.getLayover_value(),
-					loadCompletionModel.getScale_value(),
-					loadCompletionModel.getExtra_stop_charge(),
-					loadCompletionModel.getTrailer_wash(),
-					loadCompletionModel.isLog_applicable_flag()
-		
+			Object load_completion_param[] = { loadCompletionModel.getLoad_id(), loadCompletionModel.getLoad_number(),
+					updatedBy, loadCompletionModel.getLumper_value(), loadCompletionModel.getLumper_paid_by(),
+					loadCompletionModel.getDetention_value(), loadCompletionModel.isDetention_flag(),
+					loadCompletionModel.isLayover_flag(), loadCompletionModel.getLayover_value(),
+					loadCompletionModel.getScale_value(), loadCompletionModel.getExtra_stop_charge(),
+					loadCompletionModel.getTrailer_wash(), loadCompletionModel.isLog_applicable_flag()
+
 			};
 
 //			int load_complition_status = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.handle_load_completion,
 //					load_completion_param);
-			int load_complition_status = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.handle_load_completion_test,
-					load_completion_param);
-			System.out.println("load_complition_status: "+load_complition_status);
-			 //no_log_folder_path = "";
+			int load_complition_status = dbContextserviceBms
+					.QueryToFirstWithInt(QueryMaster.handle_load_completion_test, load_completion_param);
+			System.out.println("load_complition_status: " + load_complition_status);
+			// no_log_folder_path = "";
 			if (loadCompletionModel.getPod() != null) {
 				/**/
-				
+
 				String newFileName = loadCompletionModel.getLoad_number() + "_pod";
-				String newFileNameWithExtension = CommonController.renameFileWithExtension(loadCompletionModel.getPod(), newFileName);
+				String newFileNameWithExtension = CommonController.renameFileWithExtension(loadCompletionModel.getPod(),
+						newFileName);
 				String newFileNameWithoutExtension = CommonController.getNewFileNameWithoutExtension(newFileName);
 				LocalDate currentDate = LocalDate.now();
 				String month = currentDate.getMonth().toString(); // Example: "FEBRUARY"
@@ -835,94 +820,95 @@ public class LoadRepository {
 				String driverFolder = yearFolder + "/" + month + "/" + loadCompletionModel.getDriver_name();
 				String targetFolder = driverFolder + "/"
 						+ PropertiesReader.getProperty("constant", "BASEURL_FOR_SUB_FOLDER_POD_LUMPER_RECEIPT_SCALE");
-				
+				Object[] param_to_get_document_details = { loadCompletionModel.getLoad_number(), 2 };
+				DriverDocumentDto driverDocumentDto = dbContextserviceBms.QueryToFirstWithParam(
+						QueryMaster.get_document_details_by_load_and_subfolder, param_to_get_document_details,
+						DriverDocumentDto.class);
 
 				if (!loadCompletionModel.isLog_applicable_flag()) {
-				    // Original ROC folder (e.g., /driverFolder/ROC)
-					
-					Object[] param_to_get_document_details = {
-							loadCompletionModel.getLoad_number(),2
-					};
-					DriverDocumentDto driverDocumentDto = dbContextserviceBms.QueryToFirstWithParam(
-							QueryMaster.get_document_details_by_load_and_subfolder, param_to_get_document_details, DriverDocumentDto.class);
-					yearFolder = rootFolder + "_" + driverDocumentDto.getYear(); // Example: "documents_2025"
-				    driverFolder = yearFolder + "/" + driverDocumentDto.getMonth() + "/" + loadCompletionModel.getDriver_name();
-				    targetFolder = driverFolder + sub_folder_name_for_roc;
-				    // No_Log folder path
-				    String  no_log_folder_path = rootFolder + "_" + driverDocumentDto.getYear() + "_No_Log/" 
-				                       + driverDocumentDto.getMonth() + "/" 
-				                       + loadCompletionModel.getDriver_name() 
-				                       + sub_folder_name_for_roc;
+					// Original ROC folder (e.g., /driverFolder/ROC)
 
-				    logger.info("loadCompletionModel: no_log_folder_path: " + no_log_folder_path);
+					System.out.println("driverDocumentDto: "+driverDocumentDto);
+					int year = driverDocumentDto.getYear();
+					String month_name = driverDocumentDto.getMonth_name().trim(); // remove trailing spaces
+					String driver_name = loadCompletionModel.getDriver_name().trim();
+					String sub_folder = sub_folder_name_for_roc.trim();
+					String file_name = loadCompletionModel.getLoad_number().trim() + "_roc.pdf";
 
-				    try {
-				        // Create target directory if it doesn't exist
-				        File folder = new File(no_log_folder_path);
-				        if (!folder.exists()) {
-				            folder.mkdirs();
-				        }
+					String year_folder = rootFolder + "_" + year;
+					String driver_folder = Paths.get(year_folder, month_name, driver_name).toString();
+					String target_folder = Paths.get(driver_folder, sub_folder).toString();
 
-				        // File name
-				        String fileName = loadCompletionModel.getLoad_number() + "_roc.pdf";
+					String no_log_folder_path = Paths.get(rootFolder + "_" + year + "_No_Log", month_name, driver_name, sub_folder).toString();
 
-				        // Use Paths.get to avoid manual slashes
-				        Path sourcePath = Paths.get(targetFolder, fileName);
-				        Path targetPath = Paths.get(no_log_folder_path, fileName);
+					logger.info("loadCompletionModel: no_log_folder_path: " + no_log_folder_path);
 
-				        // Copy then delete
-				        Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-				        Files.deleteIfExists(sourcePath);
+					try {
+					    // Create folder if it doesn't exist
+					    File folder = new File(no_log_folder_path);
+					    if (!folder.exists()) {
+					        folder.mkdirs();
+					    }
 
-				        logger.info("Moved file from {} to {}", sourcePath, targetPath);
+					    // Use Paths.get to build valid paths
+					    Path sourcePath = Paths.get(target_folder, file_name);
+					    Path targetPath = Paths.get(no_log_folder_path, file_name);
+					    
+					    Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-				    } catch (IOException e) {
-				        logger.error("Error while moving ROC file to No_Log folder: " + e.getMessage(), e);
-				    }
-				    logger.info("loadCompletionModel: Moving File to No Log Start For Drive");
-				 // Setup Google Drive folders
+
+						// Copy then delete
+						Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+						Files.deleteIfExists(sourcePath);
+
+						logger.info("Moved file from {} to {}", sourcePath, targetPath);
+
+					} catch (IOException e) {
+						logger.error("Error while moving ROC file to No_Log folder: " + e.getMessage(), e);
+					}
+					logger.info("loadCompletionModel: Moving File to No Log Start For Drive");
+					// Setup Google Drive folders
 					String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
 					String yearFolderId = GoogleDriveService.getOrCreateFolder("year_" + driverDocumentDto.getYear(),
 							googleDriveRootFolderId);
-					String monthFolderId = GoogleDriveService.getOrCreateFolder(driverDocumentDto.getMonth(), yearFolderId);
-					String driverFolderId = GoogleDriveService.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(),
-							monthFolderId);
-					String subFolderId = GoogleDriveService.getOrCreateFolder(
-							sub_folder_name_for_roc,driverFolderId);
-					
-					
-					
-	// Run the copy/upload logic asynchronously
+					String monthFolderId = GoogleDriveService.getOrCreateFolder(driverDocumentDto.getMonth_name().trim(),
+							yearFolderId);
+					String driverFolderId = GoogleDriveService
+							.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(), monthFolderId);
+					String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name_for_roc, driverFolderId);
+
+					// Run the copy/upload logic asynchronously
+
 					CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
 						try {
-							
+							String fileId = "";
 							// Define new file name and path
-							String rocDocName = loadCompletionModel.getLoad_number() + "_roc.pdf"; // You can format this name
-																								// as needed
-							
+							String rocDocName = loadCompletionModel.getLoad_number() + "_roc.pdf"; // You can format
+																									// this name
+																									// as needed
+
 							// Upload to Google Drive
 							try {
-								
-								String fileId = GoogleDriveService.findFileIdInFolder(rocDocName,
-										subFolderId);
 
-	//							File savedFile = targetPath.toFile();
-								String yearFolderIdForNoLog = GoogleDriveService.getOrCreateFolder("year_" + driverDocumentDto.getYear()+"_NoLog",
-										googleDriveRootFolderId);
-								String monthFolderIdNoLog = GoogleDriveService.getOrCreateFolder(driverDocumentDto.getMonth(), yearFolderIdForNoLog);
-								String driverFolderIdmonthFolderIdNoLog = GoogleDriveService.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(),
-										monthFolderIdNoLog);
+								fileId = GoogleDriveService.findFileIdInFolder(rocDocName, subFolderId);
+
+								// File savedFile = targetPath.toFile();
+								String yearFolderIdForNoLog = GoogleDriveService.getOrCreateFolder(
+										"year_" + driverDocumentDto.getYear() + "_NoLog", googleDriveRootFolderId);
+								String monthFolderIdNoLog = GoogleDriveService
+										.getOrCreateFolder(driverDocumentDto.getMonth_name().trim(), yearFolderIdForNoLog);
+								String driverFolderIdmonthFolderIdNoLog = GoogleDriveService.getOrCreateFolder(
+										loadCompletionModel.getDriver_name().trim(), monthFolderIdNoLog);
 								String subFolderIdNoLog = GoogleDriveService.getOrCreateFolder(sub_folder_name_for_roc,
 										driverFolderIdmonthFolderIdNoLog);
 //									
 //								String newSubFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name,
 //										driverFolderId);
+								System.out.println("File_id: "+fileId);
 								if (fileId != null) {
-									GoogleDriveService.moveFileToFolder(fileId, subFolderIdNoLog,
-											rocDocName);
+									GoogleDriveService.moveFileToFolder(fileId, subFolderIdNoLog, rocDocName);
 								} else {
-									logger.error("File not found in old driver's folder: {}",
-											rocDocName);
+									logger.error("File not found in old driver's folder: {}", rocDocName);
 								}
 
 								// GoogleDriveService.moveFileToFolder(fileId,
@@ -938,23 +924,29 @@ public class LoadRepository {
 
 							// Insert document record into DB
 							try {
-								/*get me the document id as per the load number and the dubfolder id*/
-								
+								/* get me the document id as per the load number and the dubfolder id */
+
 //								int document_id = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.get_document_details_by_load_and_subfolder,
 //										param_to_get_document_id);
-								
+
 								Object[] param_for_document_update = {
 										driverDocumentDto.getDriver_documents_id(),
-										newFileNameWithoutExtensionRoc, //p_document_name
-										loadCompletionModel.getLoad_number() + "_roc.pdf",//p_original_document_name with extension
-										no_log_folder_path, //p_document_path
-										2, //p_sub_folder_id
-										loadCompletionModel.getDriver_id(),
-										loadCompletionModel.getLoad_number()
+										newFileNameWithoutExtensionRoc, // p_document_name
+										loadCompletionModel.getLoad_number() + "_roc.pdf", // p_original_document_name
+																							// with extension
+										no_log_folder_path, // p_document_path
+										2, // p_sub_folder_id
+										loadCompletionModel.getDriver_id(), 
+										driverDocumentDto.getMonth_name().trim(),
+										driverDocumentDto.getYear(), 
+										loadCompletionModel.getLoad_number(), 
+										fileId 
 										};
-							
-								dbContextserviceBms.QueryToFirstWithInt(QueryMaster.update_driver_document,
-										param_for_document_update);
+
+//								dbContextserviceBms.QueryToFirstWithInt(QueryMaster.update_driver_document,
+//										param_for_document_update);
+								dbContextserviceBms.QueryToFirstWithInt(
+										QueryMaster.update_driver_document_drive_file_id, param_for_document_update);
 							} catch (Exception dbEx) {
 								System.err.println("DB error while inserting document: " + dbEx.getMessage());
 								dbEx.printStackTrace();
@@ -966,12 +958,24 @@ public class LoadRepository {
 						}
 					});
 
-					  logger.info("loadCompletionModel: Moving File to No Log End For Drive");
-				    
+					logger.info("loadCompletionModel: Moving File to No Log End For Drive");
+
 				}
 
-				
+				/* here we are also will save the file in the no log */
+				String no_log_folder_path = "";
+				source_path_for_roc = driverFolder + "/" + sub_folder_name_for_roc + "/"
+						+ loadCompletionModel.getLoad_number() + "_roc.pdf";
+				if (!loadCompletionModel.isLog_applicable_flag()) {
+					no_log_folder_path = rootFolder + "_" + driverDocumentDto.getYear() + "_No_Log/"
+							+ driverDocumentDto.getMonth_name().trim() + "/" + loadCompletionModel.getDriver_name().trim()+"/"
+							+ sub_folder_name_for_roc;
 					
+					source_path_for_roc = no_log_folder_path;
+					targetFolder  = rootFolder + "_" + driverDocumentDto.getYear() + "_No_Log/"
+							+ driverDocumentDto.getMonth_name().trim() + "/" + loadCompletionModel.getDriver_name().trim()+"/"+
+							PropertiesReader.getProperty("constant", "BASEURL_FOR_SUB_FOLDER_POD_LUMPER_RECEIPT_SCALE");
+				}
 
 				// Create directories if they do not exist
 				File folder = new File(targetFolder);
@@ -980,63 +984,141 @@ public class LoadRepository {
 				}
 
 				// Save the file to the folder
-				source_path_for_roc = driverFolder + "/" + sub_folder_name_for_roc + "/"
-						+ loadCompletionModel.getLoad_number() + "_roc.pdf";
-				source_path_for_pod = targetFolder + "/" + newFileName;
+
+				source_path_for_pod = targetFolder + "/" + newFileNameWithExtension;
 				logger.info("source_path_for_roc: " + source_path_for_roc);
 				logger.info("source_path_for_pod: " + source_path_for_pod);
-				File savedFile = new File(targetFolder + "/" + newFileName);
+				File savedFile = new File(targetFolder + "/" + newFileNameWithExtension);
 				loadCompletionModel.getPod().transferTo(savedFile);
 				logger.info("LoadRepository : markLoadComplete document insert end local");
 				logger.info("LoadRepository : markLoadComplete document insert int DataBase Start");
-				// Insert document details into the database
-				Object[] param = { 
-						newFileNameWithoutExtension, 
-						newFileName,
-						targetFolder,
-						6L,
-						Integer.parseInt(loadCompletionModel.getDriver_id()),
-						loadCompletionModel.getLoad_number()
-						};
-				logger.info("vakue of params: " + Arrays.toString(param));
+//				// Insert document details into the database
+//				Object[] param = { newFileNameWithoutExtension, newFileName, targetFolder, 6L,
+//						Integer.parseInt(loadCompletionModel.getDriver_id()), loadCompletionModel.getLoad_number() };
+//				logger.info("value of params: " + Arrays.toString(param));
+//
+//				int documentId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document, param);
+//
+//				logger.info("LoadRepository : markLoadComplete document insert int DataBase end");
+				/*
+				 * CompletableFuture.runAsync(() -> { try { NOW moving the fiel form log to no
+				 * log folder start* logger.
+				 * info("LoadRepository : markLoadComplete document moving from Log to NoLog Google Drive start"
+				 * );
+				 * 
+				 * logger.
+				 * info("LoadRepository : markLoadComplete document moving from Log to NoLog Google Drive end"
+				 * );
+				 * 
+				 * logger.
+				 * info("LoadRepository : markLoadComplete document insert Google Drive start");
+				 * String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ"; String
+				 * yearFolderId = GoogleDriveService.getOrCreateFolder("year_" +
+				 * Year.now().getValue(), googleDriveRootFolderId); String monthFolderId =
+				 * GoogleDriveService.getOrCreateFolder(month, yearFolderId); String
+				 * driverFolderId = GoogleDriveService
+				 * .getOrCreateFolder(loadCompletionModel.getDriver_name().trim(),
+				 * monthFolderId); String subFolderId =
+				 * GoogleDriveService.getOrCreateFolder(PropertiesReader
+				 * .getProperty("constant",
+				 * "BASEURL_FOR_SUB_FOLDER_POD_LUMPER_RECEIPT_SCALE").trim(), driverFolderId);
+				 * 
+				 * MultipartFile convertFileToMultipartFile = CommonController
+				 * .convertFileToMultipartFile(savedFile);
+				 * GoogleDriveService.uploadFileToDrive(convertFileToMultipartFile,
+				 * subFolderId);
+				 * 
+				 * logger.
+				 * info("LoadRepository : markLoadComplete document insert Google Drive end"); }
+				 * catch (Exception e) {
+				 * logger.error("Error while uploading file to Google Drive: " +
+				 * e.getMessage()); } });
+				 */
+				int MAX_RETRIES = 3;
+				int TIMEOUT_SECONDS = 30	;
+				String fileId = null;
 
-				int documentId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document, param);
+				for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+				    try {
+				        logger.info("Attempt " + attempt + ": Starting Google Drive upload...");
 
-				logger.info("LoadRepository : markLoadComplete document insert int DataBase end");
-				CompletableFuture.runAsync(() -> {
-					try {
-						/*NOW moving the fiel form log to no log folder start**/
-						logger.info("LoadRepository : markLoadComplete document moving from Log to NoLog Google Drive start");
-						
-						logger.info("LoadRepository : markLoadComplete document moving from Log to NoLog Google Drive end");
-						
-						logger.info("LoadRepository : markLoadComplete document insert Google Drive start");
-						String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
-						String yearFolderId = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue(),
-								googleDriveRootFolderId);
-						String monthFolderId = GoogleDriveService.getOrCreateFolder(month, yearFolderId);
-						String driverFolderId = GoogleDriveService
-								.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(), monthFolderId);
-						String subFolderId = GoogleDriveService.getOrCreateFolder(PropertiesReader
-								.getProperty("constant", "BASEURL_FOR_SUB_FOLDER_POD_LUMPER_RECEIPT_SCALE").trim(),
-								driverFolderId);
+				        CompletableFuture<String> uploadFuture = CompletableFuture.supplyAsync(() -> {
+				            try {
+				                String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
+				                String yearFolderId = "";
+				                if(loadCompletionModel.isLog_applicable_flag()) {
+				                	 yearFolderId  = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue(), googleDriveRootFolderId);
+				                }else {
+				                	 yearFolderId  = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue()+ "_NoLog", googleDriveRootFolderId);
+				                }
+				               
+				                
+				                String monthFolderId = GoogleDriveService.getOrCreateFolder(month, yearFolderId);
+				                String driverFolderId = GoogleDriveService.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(), monthFolderId);
+				                String subFolderId = GoogleDriveService.getOrCreateFolder(
+				                    PropertiesReader.getProperty("constant", "BASEURL_FOR_SUB_FOLDER_POD_LUMPER_RECEIPT_SCALE").trim(),
+				                    driverFolderId
+				                );
 
-						MultipartFile convertFileToMultipartFile = CommonController
-								.convertFileToMultipartFile(savedFile);
-						GoogleDriveService.uploadFileToDrive(convertFileToMultipartFile, subFolderId);
+				                MultipartFile multipartFile = CommonController.convertFileToMultipartFile(savedFile);
+				                String innerFileId = GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
+				                logger.info("Google Drive upload successful. File ID: " + innerFileId);
+				                return innerFileId;
+				            } catch (Exception e) {
+				                logger.error("Upload attempt failed: " + e.getMessage(), e);
+				                return null;
+				            }
+				        });
 
-						logger.info("LoadRepository : markLoadComplete document insert Google Drive end");
-					} catch (Exception e) {
-						logger.error("Error while uploading file to Google Drive: " + e.getMessage());
-					}
-				});
+				        // Wait with timeout
+				        fileId = uploadFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+				        if (fileId != null) {
+				            logger.info("Upload successful on attempt " + attempt);
+				            break; // Exit the retry loop
+				        } else {
+				            logger.warn("Upload failed on attempt " + attempt);
+				        }
+
+				    } catch (TimeoutException te) {
+				        logger.error("Upload timed out on attempt " + attempt + ": " + te.getMessage());
+				    } catch (Exception e) {
+				        logger.error("Unexpected error during upload on attempt " + attempt + ": " + e.getMessage(), e);
+				    }
+
+				    if (attempt < MAX_RETRIES) {
+				        logger.info("Retrying upload (attempt " + (attempt + 1) + " of " + MAX_RETRIES + ")...");
+				    } else {
+				        logger.warn("Max retry attempts reached. Upload failed.");
+				    }
+				}
+
+				// Proceed to DB insert only if fileId is available
+				if (fileId != null) {
+				    logger.info("Proceeding to DB insert after successful upload...");
+				    Object[] param_for_doc = {
+				        newFileNameWithoutExtension,
+				        newFileName,
+				        targetFolder,
+				        6L,
+				        Integer.parseInt(loadCompletionModel.getDriver_id()),
+				        loadCompletionModel.getLoad_number(),
+				        fileId
+				    };
+				    logger.info("value of params: " + Arrays.toString(param_for_doc));
+				   int documentId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document_drive_fie_id, param_for_doc);
+				    logger.info("DB insert complete with documentId: " + documentId);
+				} else {
+				    logger.warn("Upload ultimately failed. Skipping DB insert.");
+				}
+
 
 			}
 			int userID = commonController.getUserDtoDataFromToken(request);
-			System.out.println("userID: "+userID);
-			
+			System.out.println("userID: " + userID);
+
 			Long invoice_number = dbContextserviceBms.QueryToFirstWithLong(QueryMaster.get_next_invoice_number, null);
-			
+
 			if (load_complition_status == STATUS_COMPLETED) {
 				if (loadCompletionModel.getPod() != null) {
 					logger.info("LoadRepository : markLoadComplete document insert start local");
@@ -1083,29 +1165,27 @@ public class LoadRepository {
 							System.out.println("File not found: " + path);
 						}
 					}
-					
+
 					invoiceMailModel.setAttachments(attachments);
 					CompletableFuture.runAsync(() -> {
 						Boolean isMailSent = mailService.sendInvoiceEmailWithAttachment(invoiceMailModel);
 						// whatsappService.sendFinanceRequestInsertWp(financeMailModel);
 						if (isMailSent) {
 							logger.info("LoadRepository : markLoadComplete insert_invoice start");
-							
-							logger.info("commonController.getUserDtoDataFromToken(request): "+commonController.getUserDtoDataFromToken(request));
-							System.out.println("userID 01: "+userID);
-							
-							Object[] invoice_insert_param = { 
-									invoice_number, loadCompletionModel.getCompany_id(),
-									loadCompletionModel.getLoad_number(),
-									true,
-									Integer.parseInt(loadCompletionModel.getDriver_id()),
-									userID,
+
+							logger.info("commonController.getUserDtoDataFromToken(request): "
+									+ commonController.getUserDtoDataFromToken(request));
+							System.out.println("userID 01: " + userID);
+
+							Object[] invoice_insert_param = { invoice_number, loadCompletionModel.getCompany_id(),
+									loadCompletionModel.getLoad_number(), true,
+									Integer.parseInt(loadCompletionModel.getDriver_id()), userID,
 
 							};
 							int documentId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_invoice,
 									invoice_insert_param);
 
-							logger.info("LoadRepository : markLoadComplete insert_invoice end: "+documentId);
+							logger.info("LoadRepository : markLoadComplete insert_invoice end: " + documentId);
 						}
 
 					}).thenAccept(resultMail -> {//
@@ -1120,18 +1200,14 @@ public class LoadRepository {
 				return new ApiResponse<Integer>(true, "Load Mark as Completed", true, 1, 1);
 
 			} else {
-				
+
 				logger.info("LoadRepository : markLoadComplete : with status else : " + load_complition_status);
-				Object[] invoice_insert_param = { 
-						invoice_number, 
-						loadCompletionModel.getCompany_id(),
-						loadCompletionModel.getLoad_number(),
-						false,
-						Integer.parseInt(loadCompletionModel.getDriver_id()),
-						userID,
+				Object[] invoice_insert_param = { invoice_number, loadCompletionModel.getCompany_id(),
+						loadCompletionModel.getLoad_number(), false,
+						Integer.parseInt(loadCompletionModel.getDriver_id()), userID,
 
 				};
-				
+
 				int documentId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_invoice,
 						invoice_insert_param);
 
@@ -1284,14 +1360,10 @@ public class LoadRepository {
 			logger.info("Final Amunt : " + loadAdditionalCharges.getAmount());
 			logger.info("LoadRepository : requestToInvoice  start");
 			logger.info("LoadRepository : update_load_with_charges_and_invoice  start");
-			Object[] params = { loadAdditionalCharges.getLoad_id(), 
-					commonController.getUserDtoDataFromToken(request),
-					loadAdditionalCharges.getLumper_value(),
-					loadAdditionalCharges.getDetention_value(),
-					loadAdditionalCharges.getScale_value(),
-					loadAdditionalCharges.getExtra_stop_charge(),
-					loadAdditionalCharges.getTrailer_wash(),
-					loadAdditionalCharges.getLayover(), };
+			Object[] params = { loadAdditionalCharges.getLoad_id(), commonController.getUserDtoDataFromToken(request),
+					loadAdditionalCharges.getLumper_value(), loadAdditionalCharges.getDetention_value(),
+					loadAdditionalCharges.getScale_value(), loadAdditionalCharges.getExtra_stop_charge(),
+					loadAdditionalCharges.getTrailer_wash(), loadAdditionalCharges.getLayover(), };
 			int load_id = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.update_load_with_charges_and_invoice,
 					params);
 
@@ -1454,24 +1526,26 @@ public class LoadRepository {
 		// TODO Auto-generated method stub
 		try {
 			/*
-			 *1]Cancel without TONU SELECT cancel_load_with_tonu(101, FALSE, NULL, NULL, 1);
+			 * 1]Cancel without TONU SELECT cancel_load_with_tonu(101, FALSE, NULL, NULL,
+			 * 1);
 			 *
-			 *2]Cancel with TONU, charges unknown SELECT cancel_load_with_tonu(103, TRUE,NULL, 22447, 1);
+			 * 2]Cancel with TONU, charges unknown SELECT cancel_load_with_tonu(103,
+			 * TRUE,NULL, 22447, 1);
 			 * 
-			 *3]Cancel with TONU, charges known SELECT cancel_load_with_tonu(102, TRUE,200, 22446, 1);
+			 * 3]Cancel with TONU, charges known SELECT cancel_load_with_tonu(102, TRUE,200,
+			 * 22446, 1);
 			 * 
 			 */
-			
+
 			CommonController commonController = new CommonController();
 			Object[] params;
 			boolean deleteFileFromLocalAndDrive = false;
-			logger.info("LoadRepository : cancelLoad : cancelLoadModel: "+cancelLoadModel);
+			logger.info("LoadRepository : cancelLoad : cancelLoadModel: " + cancelLoadModel);
 			Double charges = cancelLoadModel.getTonu_charges();
-             //1)cancel load no tonu
-			if (cancelLoadModel.isTonu()==false && (charges==null || charges.equals(0.0))) {
+			// 1)cancel load no tonu
+			if (cancelLoadModel.isTonu() == false && (charges == null || charges.equals(0.0))) {
 
-
-	            String source_path_for_roc = "";
+				String source_path_for_roc = "";
 				String sub_folder_name_for_roc = PropertiesReader.getProperty("constant",
 						"BASEURL_FOR_SUB_FOLDER_DISPATCH_RECORD");
 				LocalDate currentDate = LocalDate.now();
@@ -1484,120 +1558,102 @@ public class LoadRepository {
 				String yearFolderId = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue(),
 						googleDriveRootFolderId);
 				String monthFolderId = GoogleDriveService.getOrCreateFolder(month, yearFolderId);
-				String driverFolderId = GoogleDriveService
-						.getOrCreateFolder(cancelLoadModel.getDriver_name().trim(), monthFolderId);
+				String driverFolderId = GoogleDriveService.getOrCreateFolder(cancelLoadModel.getDriver_name().trim(),
+						monthFolderId);
 
-				
 				String targetFolder = driverFolder + "/" + sub_folder_name_for_roc;
-				String filePath = targetFolder + "/" +cancelLoadModel.getOld_load_number()+"_roc.pdf";
-				
-				
+				String filePath = targetFolder + "/" + cancelLoadModel.getOld_load_number() + "_roc.pdf";
+
 				logger.info("LoadRepository : requestToInvoice File storing local end");
 
 				CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
-				    try {
-				        String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name_for_roc, driverFolderId);
-				        return GoogleDriveService.deleteFileFromLocalAndDrive(
-				            filePath,
-				            subFolderId,
-				            cancelLoadModel.getOld_load_number() + "_roc.pdf"
-				        );
-				    } catch (Exception ex) {
-				        logger.error("Error during async Google Drive deletion", ex);
-				        ex.printStackTrace();
-				        return false;
-				    }
+					try {
+						String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name_for_roc,
+								driverFolderId);
+						return GoogleDriveService.deleteFileFromLocalAndDrive(filePath, subFolderId,
+								cancelLoadModel.getOld_load_number() + "_roc.pdf");
+					} catch (Exception ex) {
+						logger.error("Error during async Google Drive deletion", ex);
+						ex.printStackTrace();
+						return false;
+					}
 				});
 
 				try {
-				    // Wait for the CompletableFuture to complete and get the result
-				     deleteFileFromLocalAndDrive = future.get();  // This blocks until the task is done
+					// Wait for the CompletableFuture to complete and get the result
+					deleteFileFromLocalAndDrive = future.get(); // This blocks until the task is done
 
-				    if (deleteFileFromLocalAndDrive) {
-				        // Proceed with DB updates
-				         params = new Object[] {
-				            cancelLoadModel.getLoad_id(),
-				            cancelLoadModel.isTonu(),
-				            commonController.getUserDtoDataFromToken(request),
-				            (cancelLoadModel.getTonu_charges() == null || cancelLoadModel.getTonu_charges() == 0) ? null : cancelLoadModel.getTonu_charges(),
-				            null
-				        };
+					if (deleteFileFromLocalAndDrive) {
+						// Proceed with DB updates
+						params = new Object[] { cancelLoadModel.getLoad_id(), cancelLoadModel.isTonu(),
+								commonController.getUserDtoDataFromToken(request),
+								(cancelLoadModel.getTonu_charges() == null || cancelLoadModel.getTonu_charges() == 0)
+										? null
+										: cancelLoadModel.getTonu_charges(),
+								null };
 
-				        int load_id = dbContextserviceBms.QueryToFirstWithInt(
-				            QueryMaster.cancel_load,
-				            params
-				        );
+						int load_id = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.cancel_load, params);
 
-				        Object[] param_for_doc_delete = {
-				            cancelLoadModel.getOld_load_number(),
-				        };
+						Object[] param_for_doc_delete = { cancelLoadModel.getOld_load_number(), };
 
-				        dbContextserviceBms.QueryToFirstWithInt(
-				            QueryMaster.mark_documents_as_deleted,
-				            param_for_doc_delete
-				        );
-				        return new ApiResponse<Integer>(true, "Load Mark as Cancelled", true, 1, 1);
-				    } else {
-				        logger.warn("File deletion failed. Skipping DB update.");
-				        return new ApiResponse<Integer>(false, "Load Mark as Cancelled", false, 0, 0);
-				    }
+						dbContextserviceBms.QueryToFirstWithInt(QueryMaster.mark_documents_as_deleted,
+								param_for_doc_delete);
+						return new ApiResponse<Integer>(true, "Load Mark as Cancelled", true, 1, 1);
+					} else {
+						logger.warn("File deletion failed. Skipping DB update.");
+						return new ApiResponse<Integer>(false, "Load Mark as Cancelled", false, 0, 0);
+					}
 
 				} catch (InterruptedException | ExecutionException e) {
-				    logger.error("Async task failed", e);
-				    // Handle fallback if needed
-				    return new ApiResponse<Integer>(false, "Load Mark as Cancelled", false, 0, 0);
+					logger.error("Async task failed", e);
+					// Handle fallback if needed
+					return new ApiResponse<Integer>(false, "Load Mark as Cancelled", false, 0, 0);
 				}
 
-			    
-			    
 			}
-			//2)cancel load with tonu charges unknown
-			if (cancelLoadModel.isTonu() && (charges==null || charges.equals(0.0))) {
+			// 2)cancel load with tonu charges unknown
+			if (cancelLoadModel.isTonu() && (charges == null || charges.equals(0.0))) {
 				logger.info("LoadRepository : cancelLoad : with tonu start");
 				Long invoice_number = dbContextserviceBms.QueryToFirstWithLong(QueryMaster.get_next_invoice_number,
 						null);
-			    params = new Object[] {
-			        cancelLoadModel.getLoad_id(),
-			        cancelLoadModel.isTonu(),//true
-			        commonController.getUserDtoDataFromToken(request),
-			        (cancelLoadModel.getTonu_charges() == null || cancelLoadModel.getTonu_charges().equals(0.0)) 
-			        ? null : cancelLoadModel.getTonu_charges(),
-			        invoice_number  //invoice number as null 
-			    };
+				params = new Object[] { cancelLoadModel.getLoad_id(), cancelLoadModel.isTonu(), // true
+						commonController.getUserDtoDataFromToken(request),
+						(cancelLoadModel.getTonu_charges() == null || cancelLoadModel.getTonu_charges().equals(0.0))
+								? null
+								: cancelLoadModel.getTonu_charges(),
+						invoice_number // invoice number as null
+				};
 
-			    int load_id = dbContextserviceBms.QueryToFirstWithInt(
-			        QueryMaster.cancel_load,
-			        params
-			    );
-			    
-			    if(load_id!=0) {
-			    	logger.info("LoadRepository : cancelLoad : with tonu end");
-			    	return new ApiResponse<Integer>(true, "Load Mark as Cancelled with tonu", true, 1, 1);
-			    }
-			    else {
-			    	logger.error("LoadRepository : cancelLoad : with tonu error");
-			    	return new ApiResponse<Integer>(false, "Something went wron while cancelling the load with tonu", false,0 , 0);
-			    }
+				int load_id = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.cancel_load, params);
+
+				if (load_id != 0) {
+					logger.info("LoadRepository : cancelLoad : with tonu end");
+					return new ApiResponse<Integer>(true, "Load Mark as Cancelled with tonu", true, 1, 1);
+				} else {
+					logger.error("LoadRepository : cancelLoad : with tonu error");
+					return new ApiResponse<Integer>(false, "Something went wron while cancelling the load with tonu",
+							false, 0, 0);
+				}
 			}
-			//3)cancel load with tonu charges known
-			if (cancelLoadModel.isTonu() && charges!=null && !charges.equals(0.0)) {
-				
-				//3]Cancel with TONU, charges known SELECT cancel_load_with_tonu(102, TRUE,200, 22446, 1);
+			// 3)cancel load with tonu charges known
+			if (cancelLoadModel.isTonu() && charges != null && !charges.equals(0.0)) {
+
+				// 3]Cancel with TONU, charges known SELECT cancel_load_with_tonu(102, TRUE,200,
+				// 22446, 1);
 				cancelLoadModel.setRequesting_user(commonController.getUserDtoDataFromToken(request));
 				Integer data = requestToInvoiceForTonu(cancelLoadModel, request).Data;
-			    if(data!=0) {
-			    	return new ApiResponse<Integer>(true, "Load Mark as Cancelled With the tonu Chrages", true, 1, 1);
-			    }
-			    else {
-			    	
-			    } return new ApiResponse<Integer>(true, "Something went wron while cancelling the load with the tonu charges", true, 1, 1);
-			    
-			}
-			else {
+				if (data != 0) {
+					return new ApiResponse<Integer>(true, "Load Mark as Cancelled With the tonu Chrages", true, 1, 1);
+				} else {
+
+				}
+				return new ApiResponse<Integer>(true,
+						"Something went wron while cancelling the load with the tonu charges", true, 1, 1);
+
+			} else {
 				return new ApiResponse<Integer>(false, "Something went wron while cancelling the load", false, 0, 0);
 			}
-			
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("LoadRepository : requestToInvoice  error: " + e.getMessage());
@@ -1610,7 +1666,7 @@ public class LoadRepository {
 	public ApiResponse<Integer> requestToInvoiceForTonu(CancelLoadModel cancelLoadModel, HttpServletRequest request) {
 		// TODO Auto-generated method stub
 		try {
-			/*already the document will be stored in the driver path*/
+			/* already the document will be stored in the driver path */
 			String source_path_for_roc = "";
 			String sub_folder_name_for_roc = PropertiesReader.getProperty("constant",
 					"BASEURL_FOR_SUB_FOLDER_DISPATCH_RECORD");
@@ -1624,8 +1680,8 @@ public class LoadRepository {
 			String yearFolderId = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue(),
 					googleDriveRootFolderId);
 			String monthFolderId = GoogleDriveService.getOrCreateFolder(month, yearFolderId);
-			String driverFolderId = GoogleDriveService
-					.getOrCreateFolder(cancelLoadModel.getDriver_name().trim(), monthFolderId);
+			String driverFolderId = GoogleDriveService.getOrCreateFolder(cancelLoadModel.getDriver_name().trim(),
+					monthFolderId);
 
 			String newFileName = CommonController.renameFileWithExtension(cancelLoadModel.getRoc(),
 					cancelLoadModel.getNew_load_number() + "_roc");
@@ -1635,13 +1691,13 @@ public class LoadRepository {
 			if (!folder.exists()) {
 				folder.mkdirs();
 			}
-			String oldFilePath = targetFolder + "/" +cancelLoadModel.getOld_load_number()+"_roc.pdf";
+			String oldFilePath = targetFolder + "/" + cancelLoadModel.getOld_load_number() + "_roc.pdf";
 			File oldSavedFile = new File(oldFilePath);
 
 			// ✅ If file already exists locally, delete it
 			if (oldSavedFile.exists()) {
-			    logger.info("Existing local file found. Deleting: " + oldFilePath);
-			    oldSavedFile.delete();
+				logger.info("Existing local file found. Deleting: " + oldFilePath);
+				oldSavedFile.delete();
 			}
 			String newFilePath = targetFolder + "/" + newFileName;
 			logger.info("FilePath: " + newFilePath);
@@ -1657,9 +1713,11 @@ public class LoadRepository {
 
 					// Upload to Google Drive
 					try {
-						String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name_for_roc, driverFolderId);
+						String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name_for_roc,
+								driverFolderId);
 						MultipartFile multipartFile = CommonController.convertFileToMultipartFile(savedFile);
-						GoogleDriveService.deleteAndUploadFileToDrive(multipartFile, newFileName, subFolderId,cancelLoadModel.getOld_load_number() + "_roc.pdf");
+						GoogleDriveService.deleteAndUploadFileToDrive(multipartFile, newFileName, subFolderId,
+								cancelLoadModel.getOld_load_number() + "_roc.pdf");
 
 					} catch (IOException ioEx) {
 						// Handle file conversion or upload errors
@@ -1678,16 +1736,15 @@ public class LoadRepository {
 				}
 			});
 			logger.info("LoadRepository : requestToInvoice File uploding end");
-			Object[] params_to_get_invoice_number = {cancelLoadModel.getOld_load_number()};		
-			Long invoice_number = dbContextserviceBms.QueryToFirstWithLong(QueryMaster.get_invoice_number_by_load_number,
-					params_to_get_invoice_number);
-			
-			 invoice_number = dbContextserviceBms.QueryToFirstWithLong(QueryMaster.get_next_invoice_number, null);
-			
+			Object[] params_to_get_invoice_number = { cancelLoadModel.getOld_load_number() };
+			Long invoice_number = dbContextserviceBms
+					.QueryToFirstWithLong(QueryMaster.get_invoice_number_by_load_number, params_to_get_invoice_number);
+
+			invoice_number = dbContextserviceBms.QueryToFirstWithLong(QueryMaster.get_next_invoice_number, null);
 
 			if (cancelLoadModel.getRoc() != null) {
 				logger.info("LoadRepository : requestToInvoice document insert start local");
-				/*	
+				/*
 				 * now here we will start the merging of the document lets make the call to get
 				 * the invoice number
 				 */
@@ -1701,7 +1758,7 @@ public class LoadRepository {
 				logger.info("LoadRepository : requestToInvoice get company details end");
 				logger.info("LoadRepository : requestToInvoice generateInvoicePdf start");
 				CommonUtility.generateInvoicePdf(companyDto, invoice_number, cancelLoadModel.getTonu_charges(),
-				cancelLoadModel.getNew_load_number());
+						cancelLoadModel.getNew_load_number());
 				logger.info("LoadRepository : requestToInvoice generateInvoicePdf end");
 				logger.info("LoadRepository : requestToInvoice mergePDFDocuments start");
 				String invoice = "C:\\NAGI_GROUP\\invoice-sample\\invoice_step2.pdf";
@@ -1709,9 +1766,9 @@ public class LoadRepository {
 				List<String> paths = new ArrayList<String>();
 				paths.add(invoice);
 				paths.add(source_path_for_roc);
-				
-				String invoice_file_path = "C:\\NAGI_GROUP\\INVOICES\\" + cancelLoadModel.getNew_load_number()
-						+ "\\" +cancelLoadModel.getNew_load_number() + ".pdf";
+
+				String invoice_file_path = "C:\\NAGI_GROUP\\INVOICES\\" + cancelLoadModel.getNew_load_number() + "\\"
+						+ cancelLoadModel.getNew_load_number() + ".pdf";
 				CommonUtility.mergePDFDocuments(paths, invoice_file_path);
 				logger.info("LoadRepository : requestToInvoice mergePDFDocuments end");
 				logger.info("LoadRepository : requestToInvoice mail sending start");
@@ -1733,60 +1790,58 @@ public class LoadRepository {
 				}
 				invoiceMailModel.setAttachments(attachments);
 				CompletableFuture<Boolean> mailFuture = CompletableFuture.supplyAsync(() -> {
-					return  mailService.sendInvoiceEmailWithAttachment(invoiceMailModel);
+					return mailService.sendInvoiceEmailWithAttachment(invoiceMailModel);
 					// whatsappService.sendFinanceRequestInsertWp(financeMailModel);
-				
+
 				});
 				mailFuture.thenAccept(isMailSent -> {
-				    if (isMailSent) {
-				        logger.info("Mail sent successfully");
+					if (isMailSent) {
+						logger.info("Mail sent successfully");
 
-				        // ✅✅ Perform your final database insert here
-				        
-				        try {
-				        	CommonController commonController = new CommonController();
-				        	
-				        	long invoice_number_id = dbContextserviceBms.QueryToFirstWithLong(QueryMaster.get_invoice_number_by_load_number,
-									params_to_get_invoice_number);
-							
-				        	long invoice_numbers = dbContextserviceBms.QueryToFirstWithLong(QueryMaster.get_next_invoice_number, null);
-							
-				        	Object[] params_cancel_load_with_tonu =   {
-				 			        cancelLoadModel.getLoad_id(),
-				 			        cancelLoadModel.isTonu(),//false
-				 			        commonController.getUserDtoDataFromToken(request)==0?cancelLoadModel.getRequesting_user():commonController.getUserDtoDataFromToken(request),
-				 			        cancelLoadModel.getTonu_charges(),//null or 0
-				 			       invoice_number_id==0?invoice_numbers:invoice_number_id  //invoice number as null 
-				 			        
-				 			    };
+						// ✅✅ Perform your final database insert here
 
-				 			    int load_id = dbContextserviceBms.QueryToFirstWithInt(
-				 			        QueryMaster.cancel_load,
-				 			       params_cancel_load_with_tonu
-				 			    );
-				 			   /*Function to update the */
-				 			    if(cancelLoadModel.getOld_load_number()!=cancelLoadModel.getNew_load_number()) {
-				 			    	System.out.println("load numbers are same");
-				 			    	Object[] update_load_number =   {
-						 			        cancelLoadModel.getLoad_id(),
-						 			        cancelLoadModel.getNew_load_number(),
-						 			        cancelLoadModel.getOld_load_number(),
-						 			       commonController.getUserDtoDataFromToken(request)==0?cancelLoadModel.getRequesting_user():commonController.getUserDtoDataFromToken(request),   
-						 			    };
+						try {
+							CommonController commonController = new CommonController();
 
-						 			    int id = dbContextserviceBms.QueryToFirstWithInt(
-						 			        QueryMaster.update_load_number_by_load_id,
-						 			       update_load_number
-						 			    );
-				 			    }
-				            logger.info("Invoice record inserted successfully.");
-				        } catch (Exception dbEx) {
-				            logger.error("Failed to insert invoice record: " + dbEx.getMessage(), dbEx);
-				        }
+							long invoice_number_id = dbContextserviceBms.QueryToFirstWithLong(
+									QueryMaster.get_invoice_number_by_load_number, params_to_get_invoice_number);
 
-				    } else {
-				        logger.warn("Mail sending failed, not inserting record.");
-				    }
+							long invoice_numbers = dbContextserviceBms
+									.QueryToFirstWithLong(QueryMaster.get_next_invoice_number, null);
+
+							Object[] params_cancel_load_with_tonu = { cancelLoadModel.getLoad_id(),
+									cancelLoadModel.isTonu(), // false
+									commonController.getUserDtoDataFromToken(request) == 0
+											? cancelLoadModel.getRequesting_user()
+											: commonController.getUserDtoDataFromToken(request),
+									cancelLoadModel.getTonu_charges(), // null or 0
+									invoice_number_id == 0 ? invoice_numbers : invoice_number_id // invoice number as
+																									// null
+
+							};
+
+							int load_id = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.cancel_load,
+									params_cancel_load_with_tonu);
+							/* Function to update the */
+							if (cancelLoadModel.getOld_load_number() != cancelLoadModel.getNew_load_number()) {
+								System.out.println("load numbers are same");
+								Object[] update_load_number = { cancelLoadModel.getLoad_id(),
+										cancelLoadModel.getNew_load_number(), cancelLoadModel.getOld_load_number(),
+										commonController.getUserDtoDataFromToken(request) == 0
+												? cancelLoadModel.getRequesting_user()
+												: commonController.getUserDtoDataFromToken(request), };
+
+								int id = dbContextserviceBms.QueryToFirstWithInt(
+										QueryMaster.update_load_number_by_load_id, update_load_number);
+							}
+							logger.info("Invoice record inserted successfully.");
+						} catch (Exception dbEx) {
+							logger.error("Failed to insert invoice record: " + dbEx.getMessage(), dbEx);
+						}
+
+					} else {
+						logger.warn("Mail sending failed, not inserting record.");
+					}
 				});
 
 			}
@@ -1794,14 +1849,13 @@ public class LoadRepository {
 			logger.info("LoadRepository : markLoadComplete end");
 			logger.info("LoadRepository : markLoadComplete : with status : ");
 
-		
 			return new ApiResponse<Integer>(true, "Load Mark as Completed", true, 1, 1);
-			
+
 		} catch (Exception e) {
-			logger.error("LoadRepository : requestToInvoice  error at : "+e.getMessage());
-			return  new ApiResponse<Integer>(false, "something went wrong", false, 0, 0);			
+			logger.error("LoadRepository : requestToInvoice  error at : " + e.getMessage());
+			return new ApiResponse<Integer>(false, "something went wrong", false, 0, 0);
 		}
-		
+
 	}
 
 }
