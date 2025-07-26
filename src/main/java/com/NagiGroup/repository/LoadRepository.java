@@ -171,6 +171,7 @@ public class LoadRepository {
 					logger.info("LoadRepository : sourcePath : " + sourcePath);
 				}
 			} else {
+	
 				String sub_folder_name = PropertiesReader.getProperty("constant",
 						"BASEURL_FOR_SUB_FOLDER_DISPATCH_RECORD");
 				LocalDate currentDate = LocalDate.now();
@@ -825,142 +826,7 @@ public class LoadRepository {
 						QueryMaster.get_document_details_by_load_and_subfolder, param_to_get_document_details,
 						DriverDocumentDto.class);
 
-				if (!loadCompletionModel.isLog_applicable_flag()) {
-					// Original ROC folder (e.g., /driverFolder/ROC)
 
-					System.out.println("driverDocumentDto: "+driverDocumentDto);
-					int year = driverDocumentDto.getYear();
-					String month_name = driverDocumentDto.getMonth_name().trim(); // remove trailing spaces
-					String driver_name = loadCompletionModel.getDriver_name().trim();
-					String sub_folder = sub_folder_name_for_roc.trim();
-					String file_name = loadCompletionModel.getLoad_number().trim() + "_roc.pdf";
-
-					String year_folder = rootFolder + "_" + year;
-					String driver_folder = Paths.get(year_folder, month_name, driver_name).toString();
-					String target_folder = Paths.get(driver_folder, sub_folder).toString();
-
-					String no_log_folder_path = Paths.get(rootFolder + "_" + year + "_No_Log", month_name, driver_name, sub_folder).toString();
-
-					logger.info("loadCompletionModel: no_log_folder_path: " + no_log_folder_path);
-
-					try {
-					    // Create folder if it doesn't exist
-					    File folder = new File(no_log_folder_path);
-					    if (!folder.exists()) {
-					        folder.mkdirs();
-					    }
-
-					    // Use Paths.get to build valid paths
-					    Path sourcePath = Paths.get(target_folder, file_name);
-					    Path targetPath = Paths.get(no_log_folder_path, file_name);
-					    
-					    Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-
-						// Copy then delete
-						Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-						Files.deleteIfExists(sourcePath);
-
-						logger.info("Moved file from {} to {}", sourcePath, targetPath);
-
-					} catch (IOException e) {
-						logger.error("Error while moving ROC file to No_Log folder: " + e.getMessage(), e);
-					}
-					logger.info("loadCompletionModel: Moving File to No Log Start For Drive");
-					// Setup Google Drive folders
-					String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
-					String yearFolderId = GoogleDriveService.getOrCreateFolder("year_" + driverDocumentDto.getYear(),
-							googleDriveRootFolderId);
-					String monthFolderId = GoogleDriveService.getOrCreateFolder(driverDocumentDto.getMonth_name().trim(),
-							yearFolderId);
-					String driverFolderId = GoogleDriveService
-							.getOrCreateFolder(loadCompletionModel.getDriver_name().trim(), monthFolderId);
-					String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name_for_roc, driverFolderId);
-
-					// Run the copy/upload logic asynchronously
-
-					CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-						try {
-							String fileId = "";
-							// Define new file name and path
-							String rocDocName = loadCompletionModel.getLoad_number() + "_roc.pdf"; // You can format
-																									// this name
-																									// as needed
-
-							// Upload to Google Drive
-							try {
-
-								fileId = GoogleDriveService.findFileIdInFolder(rocDocName, subFolderId);
-
-								// File savedFile = targetPath.toFile();
-								String yearFolderIdForNoLog = GoogleDriveService.getOrCreateFolder(
-										"year_" + driverDocumentDto.getYear() + "_NoLog", googleDriveRootFolderId);
-								String monthFolderIdNoLog = GoogleDriveService
-										.getOrCreateFolder(driverDocumentDto.getMonth_name().trim(), yearFolderIdForNoLog);
-								String driverFolderIdmonthFolderIdNoLog = GoogleDriveService.getOrCreateFolder(
-										loadCompletionModel.getDriver_name().trim(), monthFolderIdNoLog);
-								String subFolderIdNoLog = GoogleDriveService.getOrCreateFolder(sub_folder_name_for_roc,
-										driverFolderIdmonthFolderIdNoLog);
-//									
-//								String newSubFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name,
-//										driverFolderId);
-								System.out.println("File_id: "+fileId);
-								if (fileId != null) {
-									GoogleDriveService.moveFileToFolder(fileId, subFolderIdNoLog, rocDocName);
-								} else {
-									logger.error("File not found in old driver's folder: {}", rocDocName);
-								}
-
-								// GoogleDriveService.moveFileToFolder(fileId,
-								// newSubFolderId,loadStatusModel.getFile_name());
-
-							} catch (IOException ioEx) {
-								System.err.println("Google Drive upload error: " + ioEx.getMessage());
-								ioEx.printStackTrace();
-								return;
-							}
-							String newFileNameWithoutExtensionRoc = CommonController
-									.getNewFileNameWithoutExtension(loadCompletionModel.getLoad_number() + "_roc.pdf");
-
-							// Insert document record into DB
-							try {
-								/* get me the document id as per the load number and the dubfolder id */
-
-//								int document_id = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.get_document_details_by_load_and_subfolder,
-//										param_to_get_document_id);
-
-								Object[] param_for_document_update = {
-										driverDocumentDto.getDriver_documents_id(),
-										newFileNameWithoutExtensionRoc, // p_document_name
-										loadCompletionModel.getLoad_number() + "_roc.pdf", // p_original_document_name
-																							// with extension
-										no_log_folder_path, // p_document_path
-										2, // p_sub_folder_id
-										loadCompletionModel.getDriver_id(), 
-										driverDocumentDto.getMonth_name().trim(),
-										driverDocumentDto.getYear(), 
-										loadCompletionModel.getLoad_number(), 
-										fileId 
-										};
-
-//								dbContextserviceBms.QueryToFirstWithInt(QueryMaster.update_driver_document,
-//										param_for_document_update);
-								dbContextserviceBms.QueryToFirstWithInt(
-										QueryMaster.update_driver_document_drive_file_id, param_for_document_update);
-							} catch (Exception dbEx) {
-								System.err.println("DB error while inserting document: " + dbEx.getMessage());
-								dbEx.printStackTrace();
-							}
-
-						} catch (Exception ex) {
-							System.err.println("Unexpected error in async process: " + ex.getMessage());
-							ex.printStackTrace();
-						}
-					});
-
-					logger.info("loadCompletionModel: Moving File to No Log End For Drive");
-
-				}
 
 				/* here we are also will save the file in the no log */
 				String no_log_folder_path = "";
@@ -992,48 +858,6 @@ public class LoadRepository {
 				loadCompletionModel.getPod().transferTo(savedFile);
 				logger.info("LoadRepository : markLoadComplete document insert end local");
 				logger.info("LoadRepository : markLoadComplete document insert int DataBase Start");
-//				// Insert document details into the database
-//				Object[] param = { newFileNameWithoutExtension, newFileName, targetFolder, 6L,
-//						Integer.parseInt(loadCompletionModel.getDriver_id()), loadCompletionModel.getLoad_number() };
-//				logger.info("value of params: " + Arrays.toString(param));
-//
-//				int documentId = dbContextserviceBms.QueryToFirstWithInt(QueryMaster.insert_driver_document, param);
-//
-//				logger.info("LoadRepository : markLoadComplete document insert int DataBase end");
-				/*
-				 * CompletableFuture.runAsync(() -> { try { NOW moving the fiel form log to no
-				 * log folder start* logger.
-				 * info("LoadRepository : markLoadComplete document moving from Log to NoLog Google Drive start"
-				 * );
-				 * 
-				 * logger.
-				 * info("LoadRepository : markLoadComplete document moving from Log to NoLog Google Drive end"
-				 * );
-				 * 
-				 * logger.
-				 * info("LoadRepository : markLoadComplete document insert Google Drive start");
-				 * String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ"; String
-				 * yearFolderId = GoogleDriveService.getOrCreateFolder("year_" +
-				 * Year.now().getValue(), googleDriveRootFolderId); String monthFolderId =
-				 * GoogleDriveService.getOrCreateFolder(month, yearFolderId); String
-				 * driverFolderId = GoogleDriveService
-				 * .getOrCreateFolder(loadCompletionModel.getDriver_name().trim(),
-				 * monthFolderId); String subFolderId =
-				 * GoogleDriveService.getOrCreateFolder(PropertiesReader
-				 * .getProperty("constant",
-				 * "BASEURL_FOR_SUB_FOLDER_POD_LUMPER_RECEIPT_SCALE").trim(), driverFolderId);
-				 * 
-				 * MultipartFile convertFileToMultipartFile = CommonController
-				 * .convertFileToMultipartFile(savedFile);
-				 * GoogleDriveService.uploadFileToDrive(convertFileToMultipartFile,
-				 * subFolderId);
-				 * 
-				 * logger.
-				 * info("LoadRepository : markLoadComplete document insert Google Drive end"); }
-				 * catch (Exception e) {
-				 * logger.error("Error while uploading file to Google Drive: " +
-				 * e.getMessage()); } });
-				 */
 				int MAX_RETRIES = 3;
 				int TIMEOUT_SECONDS = 30	;
 				String fileId = null;
@@ -1856,6 +1680,125 @@ public class LoadRepository {
 			return new ApiResponse<Integer>(false, "something went wrong", false, 0, 0);
 		}
 
+	}
+
+	public ApiResponse<Integer> managingNoLogDocument(LoadCompletionModel loadCompletionModel, HttpServletRequest request) {
+	    try {
+	        logger.info("Started managingNoLogDocument for Load #: {}", loadCompletionModel.getLoad_number());
+
+	        String sub_folder_name_for_roc = PropertiesReader.getProperty("constant", "BASEURL_FOR_SUB_FOLDER_DISPATCH_RECORD");
+	        Object[] param_to_get_document_details = { loadCompletionModel.getLoad_number(), 2 };
+
+	        DriverDocumentDto driverDocumentDto = dbContextserviceBms.QueryToFirstWithParam(
+	                QueryMaster.get_document_details_by_load_and_subfolder, param_to_get_document_details, DriverDocumentDto.class);
+
+	        if (!loadCompletionModel.isLog_applicable_flag()) {
+	            logger.info("Log is NOT applicable. Proceeding with No Log document handling.");
+
+	            int year = driverDocumentDto.getYear();
+	            String month_name = driverDocumentDto.getMonth_name().trim();
+	            String driver_name = loadCompletionModel.getDriver_name().trim();
+	            String sub_folder = sub_folder_name_for_roc.trim();
+	            String file_name = loadCompletionModel.getLoad_number().trim() + "_roc.pdf";
+
+	            String year_folder = rootFolder + "_" + year;
+	            String driver_folder = Paths.get(year_folder, month_name, driver_name).toString();
+	            String target_folder = Paths.get(driver_folder, sub_folder).toString();
+	            String no_log_folder_path = Paths.get(rootFolder + "_" + year + "_No_Log", month_name, driver_name, sub_folder).toString();
+
+	            logger.info("Target Folder Path: {}", target_folder);
+	            logger.info("No-Log Folder Path: {}", no_log_folder_path);
+
+	            try {
+	                File folder = new File(no_log_folder_path);
+	                if (!folder.exists()) {
+	                    boolean created = folder.mkdirs();
+	                    logger.info(created ? "Created No-Log directory." : "Failed to create No-Log directory.");
+	                }
+
+	                Path sourcePath = Paths.get(target_folder, file_name);
+	                Path targetPath = Paths.get(no_log_folder_path, file_name);
+
+	                logger.info("Copying file from {} to {}", sourcePath, targetPath);
+	                Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+	                Files.deleteIfExists(sourcePath);
+	                logger.info("File moved successfully.");
+	            } catch (IOException e) {
+	                logger.error("Error while moving ROC file to No_Log folder: {}", e.getMessage(), e);
+	                return new ApiResponse<>(false, "File move failed: " + e.getMessage(), false, 0, 0);
+	            }
+
+	            logger.info("Preparing Google Drive folder structure...");
+	            try {
+	                String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
+	                String yearFolderId = GoogleDriveService.getOrCreateFolder("year_" + year, googleDriveRootFolderId);
+	                String monthFolderId = GoogleDriveService.getOrCreateFolder(month_name, yearFolderId);
+	                String driverFolderId = GoogleDriveService.getOrCreateFolder(driver_name, monthFolderId);
+	                String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder, driverFolderId);
+
+	                logger.info("Google Drive folder hierarchy prepared.");
+
+	                CompletableFuture.runAsync(() -> {
+	                    try {
+	                        logger.info("Started async file move to No_Log Google Drive folder...");
+
+	                        String rocDocName = loadCompletionModel.getLoad_number() + "_roc.pdf";
+	                        String fileId = GoogleDriveService.findFileIdInFolder(rocDocName, subFolderId);
+
+	                        if (fileId == null) {
+	                            logger.error("File {} not found in original folder in Google Drive.", rocDocName);
+	                            return;
+	                        }
+
+	                        String yearFolderIdNoLog = GoogleDriveService.getOrCreateFolder("year_" + year + "_NoLog", googleDriveRootFolderId);
+	                        String monthFolderIdNoLog = GoogleDriveService.getOrCreateFolder(month_name, yearFolderIdNoLog);
+	                        String driverFolderIdNoLog = GoogleDriveService.getOrCreateFolder(driver_name, monthFolderIdNoLog);
+	                        String subFolderIdNoLog = GoogleDriveService.getOrCreateFolder(sub_folder, driverFolderIdNoLog);
+
+	                        logger.info("Moving file ID {} to No_Log folder in Drive.", fileId);
+	                        GoogleDriveService.moveFileToFolder(fileId, subFolderIdNoLog, rocDocName);
+
+	                        String newFileNameWithoutExtensionRoc = CommonController.getNewFileNameWithoutExtension(rocDocName);
+
+	                        Object[] param_for_document_update = {
+	                                (long)driverDocumentDto.getDriver_documents_id(),
+	                                newFileNameWithoutExtensionRoc,
+	                                rocDocName,
+	                                no_log_folder_path,
+	                                2l,
+	                                Long.parseLong(loadCompletionModel.getDriver_id()),
+	                                month_name,
+	                                year,
+	                                loadCompletionModel.getLoad_number(),
+	                                fileId
+	                        };
+	                        System.out.println("param_for_document_update: " + Arrays.toString(param_for_document_update));
+
+	                        logger.info("Updating DB with new file path and Google Drive ID...");
+	                        dbContextserviceBms.QueryToFirstWithInt(QueryMaster.update_driver_document_drive_file_id, param_for_document_update);
+	                        logger.info("DB update successful.");
+	                    } catch (Exception ex) {
+	                        logger.error("Unexpected error in async Drive task: {}", ex.getMessage(), ex);
+	                    }
+	                });
+
+	                logger.info("Async Google Drive file move task started.");
+	            } catch (Exception driveEx) {
+	                logger.error("Google Drive error: {}", driveEx.getMessage(), driveEx);
+	                return new ApiResponse<>(false, "Google Drive operation failed: " + driveEx.getMessage(), false, 0, 0);
+	            }
+
+	            return new ApiResponse<>(true, "No Log Document Handled Successfully", true, 1, 1);
+
+	        } else {
+	            logger.info("Log is applicable. No No-Log action required.");
+	            return new ApiResponse<>(true, "Log is applicable. No No-Log action required.", true, 1, 1);
+	        }
+
+	    } catch (Exception e) {
+	        logger.error("Exception in managingNoLogDocument: {}", e.getMessage(), e);
+	        return new ApiResponse<>(false, "Unexpected error occurred: " + e.getMessage(), false, 0, 0);
+	    }
 	}
 
 }

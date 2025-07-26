@@ -74,6 +74,7 @@ public class LoadServiceIMP implements LoadService {
 	@Override
 	public ApiResponse<Integer> markLoadComplete(LoadCompletionModel loadCompletionModel, HttpServletRequest request) {
 		// TODO Auto-generated method stub
+		
 		return loadRepository.markLoadComplete(loadCompletionModel, request);
 	}
 
@@ -124,6 +125,13 @@ public class LoadServiceIMP implements LoadService {
 	public ApiResponse<Integer> requestToInvoiceForTonu(CancelLoadModel cancelLoadModel, HttpServletRequest request) {
 		// TODO Auto-generated method stub
 		return loadRepository.requestToInvoiceForTonu(cancelLoadModel,request);
+	}
+
+	@Override
+	public ApiResponse<Integer> requestToManageNoLogDoc(LoadCompletionModel loadCompletionModel,
+			HttpServletRequest request) {
+		// TODO Auto-generated method stub
+		return loadRepository.managingNoLogDocument(loadCompletionModel,request);
 	}
 
 }

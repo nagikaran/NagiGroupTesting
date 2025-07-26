@@ -51,5 +51,7 @@ public interface LoadService {
 
 	ApiResponse<Integer> requestToInvoiceForTonu(CancelLoadModel cancelLoadModel, HttpServletRequest request);
 
+	ApiResponse<Integer> requestToManageNoLogDoc(LoadCompletionModel loadCompletionModel, HttpServletRequest request);
+
 
 }

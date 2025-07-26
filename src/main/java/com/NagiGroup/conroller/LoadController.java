@@ -95,6 +95,7 @@ public class LoadController {
 	@PostMapping(value = "/completion",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)	
 	@Operation(summary = "function = handle_load_completion")
 	public ApiResponse<Integer>  markLoadComplete(@ModelAttribute LoadCompletionModel loadCompletionModel,HttpServletRequest request) {
+		
 		return loadService.markLoadComplete(loadCompletionModel,request);		 
 	
 	} 
@@ -159,6 +160,11 @@ public class LoadController {
 		return loadService.requestToInvoiceForTonu(cancelLoadModel,request);		 
 	
 	}
+	@PostMapping(value = "/request_to_manage_no_log_doc",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)	
+	@Operation(summary = "function = handle_load_completion")
+	public ApiResponse<Integer>  requestToManageNoLogDoc(@ModelAttribute LoadCompletionModel loadCompletionModel,HttpServletRequest request) {
+		return loadService.requestToManageNoLogDoc(loadCompletionModel,request);		 
 	
+	} 
 			
 }
