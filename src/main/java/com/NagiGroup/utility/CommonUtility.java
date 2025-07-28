@@ -1,17 +1,23 @@
 package com.NagiGroup.utility;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
 
 import javax.imageio.ImageIO;
 
@@ -26,12 +32,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.NagiGroup.config.GoogleDriveService;
 import com.NagiGroup.conroller.CommonController;
 import com.NagiGroup.dto.companyDetails.CompanyDetailsDto;
 import com.NagiGroup.model.load.LoadAdditionalCharges;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.pdf.PdfWriter;
+
 
 public class CommonUtility {
 	 private static final Logger logger = LoggerFactory.getLogger(CommonUtility.class);
@@ -127,8 +135,9 @@ public class CommonUtility {
 	    }
 	 
 	 
-	 public static void generateInvoicePdf(CompanyDetailsDto companyDto,long invoiceNumber,double amount,String loadNumber) {
+	 public static String generateInvoicePdf(CompanyDetailsDto companyDto,long invoiceNumber,double amount,String loadNumber) {
 		   logger.info("generateInvoicePdf start");
+		   String innerFileId = "";
 	        try (PDDocument document = new PDDocument()) {
 	            PDPage page = new PDPage(PDRectangle.A4);
 	            document.addPage(page);
@@ -334,7 +343,33 @@ public class CommonUtility {
 	content12.lineTo(500, 90);  // End (x=500, y=90)
 	content12.stroke();
 	content12.close();
-
+	String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
+	String yearFolderId  = "";
+	String monthFolderId = "";
+	LocalDate currentDates = LocalDate.now();
+	String month = currentDates.getMonth().toString();
+	try {
+		yearFolderId  = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue(), googleDriveRootFolderId);
+		monthFolderId = GoogleDriveService.getOrCreateFolder(month, yearFolderId);
+		String driverFolderId = GoogleDriveService.getOrCreateFolder(companyDto.getDriver_name().trim(), monthFolderId);
+		 String subFolderId = GoogleDriveService.getOrCreateFolder(
+		            PropertiesReader.getProperty("constant", "BASEURL_FOR_INVOICE").trim(),
+		            driverFolderId);
+		   ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	        document.save(baos);
+	        byte[] pdfBytes = baos.toByteArray();
+	        baos.close();
+	        MultipartFile multipartFile = CommonUtility.convertByteArrayToMultipartFile(pdfBytes,loadNumber + "_invoice.pdf");
+	        
+	         innerFileId = invoiceFileId(multipartFile,subFolderId);
+	         
+		
+	
+       
+	} catch (GeneralSecurityException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
 	String folderPath = "C:\\NAGI_GROUP\\invoice\\";
 	File directory = new File(folderPath);
 	if (!directory.exists()) {
@@ -351,6 +386,7 @@ public class CommonUtility {
 	        	logger.error("generateInvoicePdf "+e.getMessage());
 	            e.printStackTrace();
 	        }
+			return innerFileId;
 	    
 	 }
 	 
@@ -480,7 +516,62 @@ public class CommonUtility {
 
 		    return false;
 		}
+	
+	 public static MultipartFile convertByteArrayToMultipartFile(byte[] bytes, String fileName) {
+	     try {
+	         return new MockMultipartFile(
+	             "file",                  // parameter name
+	             fileName,                // original file name
+	             "application/pdf",       // content type
+	             new ByteArrayInputStream(bytes)  // input stream
+	         );
+	     } catch (IOException e) {
+	         e.printStackTrace();
+	         return null;  // or throw new RuntimeException(e);
+	     }
+	 }
 
+	 public static String invoiceFileId(MultipartFile multipartFile, String subFolderId) {
+		    try {
+		        // Run the upload in a CompletableFuture and return the result
+		        return CompletableFuture.supplyAsync(() -> {
+		            try {
+		                return GoogleDriveService.uploadFileToDrive(multipartFile, subFolderId);
+		            } catch (IOException e) {
+		                LoggerFactory.getLogger("invoiceFileId").error("IO error while uploading file: " + e.getMessage(), e);
+		            } catch (Exception e) {
+		                LoggerFactory.getLogger("invoiceFileId").error("Unexpected error while uploading file: " + e.getMessage(), e);
+		            }
+		            return null;
+		        }).join(); // block and return the result (String)
+		    } catch (Exception e) {
+		        LoggerFactory.getLogger("invoiceFileId").error("Error during future execution: " + e.getMessage(), e);
+		        return null;
+		    }
+		}
 
+	 public static ByteArrayOutputStream mergePDFsToMemory(InputStream... pdfStreams) {
+	        ByteArrayOutputStream mergedOutputStream = new ByteArrayOutputStream();
+	        PDFMergerUtility pdfMerger = new PDFMergerUtility();
 
+	        try {
+	            pdfMerger.setDestinationStream(mergedOutputStream);
+
+	            for (InputStream stream : pdfStreams) {
+	                if (stream != null) {
+	                    pdfMerger.addSource(stream);
+	                } else {
+	                	logger.warn("One of the input streams is null and will be skipped.");
+	                }
+	            }
+
+	            pdfMerger.mergeDocuments(null); // Uses default memory settings
+	            logger.info("PDFs merged successfully in memory.");
+	        } catch (IOException e) {
+	        	logger.error("Failed to merge PDFs: {}", e.getMessage(), e);
+
+	        }
+
+	        return mergedOutputStream;
+	    }
 }

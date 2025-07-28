@@ -15,6 +15,7 @@ public class CompanyDetailsDto {
 	private String address_line2;
 	private String email;
 	private String fax;
+	private String driver_name;
 	public int getCompany_id() {
 		return company_id;
 	}
@@ -50,6 +51,12 @@ public class CompanyDetailsDto {
 	}
 	public void setFax(String fax) {
 		this.fax = fax;
+	}
+	public String getDriver_name() {
+		return driver_name;
+	}
+	public void setDriver_name(String driver_name) {
+		this.driver_name = driver_name;
 	}
 	
 	

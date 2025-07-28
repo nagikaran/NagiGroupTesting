@@ -1,8 +1,10 @@
 package com.NagiGroup.repository;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,6 +34,7 @@ import com.NagiGroup.connection.web.DbContextService;
 import com.NagiGroup.conroller.CommonController;
 import com.NagiGroup.dto.companyDetails.CompanyDetailsDto;
 import com.NagiGroup.dto.companyDetails.CompanyNameDto;
+import com.NagiGroup.dto.driverDocument.DocumentFileId;
 import com.NagiGroup.dto.driverDocument.DriverDocumentDto;
 import com.NagiGroup.dto.load.LoadAssignmentDocumentDto;
 import com.NagiGroup.dto.load.LoadDto;
@@ -957,10 +960,34 @@ public class LoadRepository {
 					Object params[] = { loadCompletionModel.getCompany_id() };
 					CompanyDetailsDto companyDto = dbContextserviceBms.QueryToFirstWithParam(
 							QueryMaster.get_company_details_by_id, params, CompanyDetailsDto.class);
+					companyDto.setCompany_name(loadCompletionModel.getDriver_name());
 					logger.info("LoadRepository : markLoadComplete get company details end");
 					logger.info("LoadRepository : markLoadComplete generateInvoicePdf start");
-					CommonUtility.generateInvoicePdf(companyDto, invoice_number, loadCompletionModel.getAmount(),
+					companyDto.setDriver_name(loadCompletionModel.getDriver_name());
+					String invoicePdf = CommonUtility.generateInvoicePdf(companyDto, invoice_number, loadCompletionModel.getAmount(),
 							loadCompletionModel.getLoad_number());
+					
+					Object[] params_for_file_id_for_roc = {
+							2l,
+							loadCompletionModel.getLoad_number()
+							
+				};
+				DocumentFileId documentFileId_roc = dbContextserviceBms.QueryToFirstWithParam(
+						QueryMaster.get_drive_file_id, params_for_file_id_for_roc, DocumentFileId.class);
+				System.out.println("documentFileId_roc: "+documentFileId_roc);
+				Object[] params_for_file_id_for_pod = {
+						6l,
+						loadCompletionModel.getLoad_number()
+						
+			};
+			DocumentFileId documentFileId_pod = dbContextserviceBms.QueryToFirstWithParam(
+					QueryMaster.get_drive_file_id, params_for_file_id_for_pod, DocumentFileId.class);
+			
+				InputStream invoiceStream = GoogleDriveService.getDriveService().files().get(invoicePdf).executeMediaAsInputStream();						
+				InputStream rocStream = GoogleDriveService.getDriveService().files().get(documentFileId_roc.getDrive_file_id()).executeMediaAsInputStream();
+				InputStream podStream = GoogleDriveService.getDriveService().files().get(documentFileId_pod.getDrive_file_id()).executeMediaAsInputStream();
+				ByteArrayOutputStream mergePDFsToMemory = CommonUtility.mergePDFsToMemory(invoiceStream,rocStream,podStream);
+				
 					logger.info("LoadRepository : markLoadComplete generateInvoicePdf end");
 					logger.info("LoadRepository : markLoadComplete mergePDFDocuments start");
 					String invoice = "D:\\NAGI_GROUP\\invoice-sample\\invoice_step2.pdf";
@@ -971,7 +998,7 @@ public class LoadRepository {
 					paths.add(source_path_for_pod);
 					String invoice_file_path = "C:\\NAGI_GROUP\\INVOICES\\" + loadCompletionModel.getLoad_number()
 							+ "\\" + loadCompletionModel.getLoad_number() + ".pdf";
-					CommonUtility.mergePDFDocuments(paths, invoice_file_path);
+					//CommonUtility.mergePDFDocuments(paths, invoice_file_path);
 					logger.info("LoadRepository : markLoadComplete mergePDFDocuments end");
 					logger.info("LoadRepository : markLoadComplete mail sending start");
 					InvoiceMailModel invoiceMailModel = new InvoiceMailModel();
@@ -981,14 +1008,20 @@ public class LoadRepository {
 					List<File> attachments = new ArrayList<>();
 					ArrayList<String> filePaths = new ArrayList<String>();
 					filePaths.add(invoice_file_path);
-					for (String path : filePaths) {
-						File file = new File(path);
-						if (file.exists()) {
-							attachments.add(file);
-						} else {
-							System.out.println("File not found: " + path);
-						}
+//					for (String path : filePaths) {
+//						File file = new File(path);
+//						if (file.exists()) {
+//							attachments.add(file);
+//						} else {
+//							System.out.println("File not found: " + path);
+//						}
+//					}
+					File mergedFile = new File(loadCompletionModel.getLoad_number()+".pdf");
+					try (FileOutputStream fos = new FileOutputStream(mergedFile)) {
+						mergePDFsToMemory.writeTo(fos);
 					}
+					attachments.add(mergedFile);
+					invoiceMailModel.setAttachments(attachments);
 
 					invoiceMailModel.setAttachments(attachments);
 					CompletableFuture.runAsync(() -> {
@@ -1283,7 +1316,7 @@ public class LoadRepository {
 								QueryMaster.get_company_details_by_id, params_for_company_dto, CompanyDetailsDto.class);
 						logger.info("LoadRepository : requestToInvoice get company details end");
 						logger.info("LoadRepository : requestToInvoice generateInvoicePdf start");
-						CommonUtility.generateInvoicePdf(companyDto, invoice_number, loadAdditionalCharges.getAmount(),
+						String invoicePdf = CommonUtility.generateInvoicePdf(companyDto, invoice_number, loadAdditionalCharges.getAmount(),
 								loadAdditionalCharges.getLoad_number());
 						logger.info("LoadRepository : requestToInvoice generateInvoicePdf end");
 						logger.info("LoadRepository : requestToInvoice mergePDFDocuments start");
@@ -1295,7 +1328,30 @@ public class LoadRepository {
 						paths.add(source_path_for_pod);
 						String invoice_file_path = "D:\\NAGI_GROUP\\INVOICES\\" + loadAdditionalCharges.getLoad_number()
 								+ "\\" + loadAdditionalCharges.getLoad_number() + ".pdf";
-						CommonUtility.mergePDFDocuments(paths, invoice_file_path);
+						String file_id_for_roc = "";
+						String file_id_for_pod = "";
+						Object[] params_for_file_id_for_roc = {
+									2l,
+									loadAdditionalCharges.getLoad_number()
+									
+						};
+						DocumentFileId documentFileId_roc = dbContextserviceBms.QueryToFirstWithParam(
+								QueryMaster.get_drive_file_id, params_for_file_id_for_roc, DocumentFileId.class);
+						Object[] params_for_file_id_for_pod = {
+								6l,
+								loadAdditionalCharges.getLoad_number()
+								
+					};
+					DocumentFileId documentFileId_pod = dbContextserviceBms.QueryToFirstWithParam(
+							QueryMaster.get_drive_file_id, params_for_file_id_for_pod, DocumentFileId.class);
+					
+						InputStream invoiceStream = GoogleDriveService.getDriveService().files().get(invoicePdf).executeMediaAsInputStream();						
+						InputStream rocStream = GoogleDriveService.getDriveService().files().get(documentFileId_roc.getDrive_file_id()).executeMediaAsInputStream();
+						InputStream podStream = GoogleDriveService.getDriveService().files().get(documentFileId_pod.getDrive_file_id()).executeMediaAsInputStream();
+						ByteArrayOutputStream mergePDFsToMemory = CommonUtility.mergePDFsToMemory(invoiceStream,rocStream,podStream);
+						
+						//CommonUtility.mergePDFDocuments(paths, invoice_file_path);
+						
 						logger.info("LoadRepository : requestToInvoice mergePDFDocuments end");
 						logger.info("LoadRepository : requestToInvoice mail sending start");
 						InvoiceMailModel invoiceMailModel = new InvoiceMailModel();
@@ -1304,15 +1360,20 @@ public class LoadRepository {
 						invoiceMailModel.setCompany_mail_id(companyDto.getEmail().trim());
 						List<File> attachments = new ArrayList<>();
 						ArrayList<String> filePaths = new ArrayList<String>();
-						filePaths.add(invoice_file_path);
-						for (String path : filePaths) {
-							File file = new File(path);
-							if (file.exists()) {
-								attachments.add(file);
-							} else {
-								System.out.println("File not found: " + path);
-							}
+//						filePaths.add(invoice_file_path);
+//						for (String path : filePaths) {
+//							File file = new File(path);
+//							if (file.exists()) {
+//								attachments.add(file);
+//							} else {
+//								System.out.println("File not found: " + path);
+//							}
+//						}
+						File mergedFile = new File(loadAdditionalCharges.getLoad_number()+".pdf");
+						try (FileOutputStream fos = new FileOutputStream(mergedFile)) {
+							mergePDFsToMemory.writeTo(fos);
 						}
+						attachments.add(mergedFile);
 						invoiceMailModel.setAttachments(attachments);
 						CompletableFuture.runAsync(() -> {
 							Boolean isMailSent = mailService.sendInvoiceEmailWithAttachment(invoiceMailModel);
@@ -1581,7 +1642,8 @@ public class LoadRepository {
 						QueryMaster.get_company_details_by_id, params_for_company_dto, CompanyDetailsDto.class);
 				logger.info("LoadRepository : requestToInvoice get company details end");
 				logger.info("LoadRepository : requestToInvoice generateInvoicePdf start");
-				CommonUtility.generateInvoicePdf(companyDto, invoice_number, cancelLoadModel.getTonu_charges(),
+				companyDto.setDriver_name(cancelLoadModel.getDriver_name());
+				String invoicePdf = CommonUtility.generateInvoicePdf(companyDto, invoice_number, cancelLoadModel.getTonu_charges(),
 						cancelLoadModel.getNew_load_number());
 				logger.info("LoadRepository : requestToInvoice generateInvoicePdf end");
 				logger.info("LoadRepository : requestToInvoice mergePDFDocuments start");
@@ -1593,7 +1655,27 @@ public class LoadRepository {
 
 				String invoice_file_path = "C:\\NAGI_GROUP\\INVOICES\\" + cancelLoadModel.getNew_load_number() + "\\"
 						+ cancelLoadModel.getNew_load_number() + ".pdf";
-				CommonUtility.mergePDFDocuments(paths, invoice_file_path);
+				Object[] params_for_file_id_for_roc = {
+						2l,
+						cancelLoadModel.getNew_load_number()
+						
+			};
+			DocumentFileId documentFileId_roc = dbContextserviceBms.QueryToFirstWithParam(
+					QueryMaster.get_drive_file_id, params_for_file_id_for_roc, DocumentFileId.class);
+			Object[] params_for_file_id_for_pod = {
+					6l,
+					cancelLoadModel.getNew_load_number()
+					
+		};
+		DocumentFileId documentFileId_pod = dbContextserviceBms.QueryToFirstWithParam(
+				QueryMaster.get_drive_file_id, params_for_file_id_for_pod, DocumentFileId.class);
+		
+			InputStream invoiceStream = GoogleDriveService.getDriveService().files().get(invoicePdf).executeMediaAsInputStream();						
+			InputStream rocStream = GoogleDriveService.getDriveService().files().get(documentFileId_roc.getDrive_file_id()).executeMediaAsInputStream();
+			InputStream podStream = GoogleDriveService.getDriveService().files().get(documentFileId_pod.getDrive_file_id()).executeMediaAsInputStream();
+			ByteArrayOutputStream mergePDFsToMemory = CommonUtility.mergePDFsToMemory(invoiceStream,rocStream,podStream);
+				
+				//CommonUtility.mergePDFDocuments(paths, invoice_file_path);
 				logger.info("LoadRepository : requestToInvoice mergePDFDocuments end");
 				logger.info("LoadRepository : requestToInvoice mail sending start");
 				InvoiceMailModel invoiceMailModel = new InvoiceMailModel();
@@ -1603,15 +1685,20 @@ public class LoadRepository {
 				invoiceMailModel.setTonu(cancelLoadModel.isTonu());
 				List<File> attachments = new ArrayList<>();
 				ArrayList<String> filePaths = new ArrayList<String>();
-				filePaths.add(invoice_file_path);
-				for (String path : filePaths) {
-					File file = new File(path);
-					if (file.exists()) {
-						attachments.add(file);
-					} else {
-						System.out.println("File not found: " + path);
-					}
+//				filePaths.add(invoice_file_path);
+//				for (String path : filePaths) {
+//					File file = new File(path);
+//					if (file.exists()) {
+//						attachments.add(file);
+//					} else {
+//						System.out.println("File not found: " + path);
+//					}
+//				}
+				File mergedFile = new File(cancelLoadModel.getNew_load_number()+".pdf");
+				try (FileOutputStream fos = new FileOutputStream(mergedFile)) {
+					mergePDFsToMemory.writeTo(fos);
 				}
+				attachments.add(mergedFile);
 				invoiceMailModel.setAttachments(attachments);
 				CompletableFuture<Boolean> mailFuture = CompletableFuture.supplyAsync(() -> {
 					return mailService.sendInvoiceEmailWithAttachment(invoiceMailModel);

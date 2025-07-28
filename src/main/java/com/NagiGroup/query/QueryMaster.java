@@ -65,4 +65,5 @@ public final class QueryMaster {
 	public static String insert_driver_document_with_month_drive_file_id = "select * from insert_driver_document_with_month_drive_file_id(?,?,?,?,?,?,?,?)";
 	public static String get_document_details_by_load_and_subfolder= "select * from get_document_details_by_load_and_subfolder(?,?)";
 	public static String update_driver_document_drive_file_id = "select * from update_driver_document_drive_file_id(?,?,?,?,?,?,?,?,?,?)";
+	public static String get_drive_file_id = "select * from get_drive_file_id(?,?)";
 }
