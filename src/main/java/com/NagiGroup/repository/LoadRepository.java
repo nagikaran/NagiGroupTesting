@@ -960,7 +960,7 @@ public class LoadRepository {
 					Object params[] = { loadCompletionModel.getCompany_id() };
 					CompanyDetailsDto companyDto = dbContextserviceBms.QueryToFirstWithParam(
 							QueryMaster.get_company_details_by_id, params, CompanyDetailsDto.class);
-					companyDto.setCompany_name(loadCompletionModel.getDriver_name());
+					companyDto.setDriver_name(loadCompletionModel.getDriver_name());
 					logger.info("LoadRepository : markLoadComplete get company details end");
 					logger.info("LoadRepository : markLoadComplete generateInvoicePdf start");
 					companyDto.setDriver_name(loadCompletionModel.getDriver_name());
@@ -1235,19 +1235,30 @@ public class LoadRepository {
 						"BASEURL_FOR_SUB_FOLDER_DISPATCH_RECORD");
 				LocalDate currentDate = LocalDate.now();
 				String month = currentDate.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
-				String yearFolder = rootFolder + "_" + Year.now().getValue();
+				String yearFolder ="";
+				if(!loadAdditionalCharges.isLog_applicable_flag()) {
+					yearFolder = rootFolder + "_" + Year.now().getValue()+"_No_Log";
+				}
+				else {
+					yearFolder = rootFolder + "_" + Year.now().getValue();
+				}
 				String driverFolder = yearFolder + "/" + month + "/" + loadAdditionalCharges.getDriver_name();
 
 				// Google Drive Folder Setup
-				String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
-				String yearFolderId = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue(),
-						googleDriveRootFolderId);
-				String monthFolderId = GoogleDriveService.getOrCreateFolder(month, yearFolderId);
-				String driverFolderId = GoogleDriveService
-						.getOrCreateFolder(loadAdditionalCharges.getDriver_name().trim(), monthFolderId);
+//				String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
+//				 String yearFolderId = "";
+//	                if(loadAdditionalCharges.isLog_applicable_flag()) {
+//	                	 yearFolderId  = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue(), googleDriveRootFolderId);
+//	                }else {
+//	                	 yearFolderId  = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue()+ "_NoLog", googleDriveRootFolderId);
+//	                }
+//				String monthFolderId = GoogleDriveService.getOrCreateFolder(month, yearFolderId);
+//				String driverFolderId = GoogleDriveService
+//						.getOrCreateFolder(loadAdditionalCharges.getDriver_name().trim(), monthFolderId);
 
 				String newFileName = CommonController.renameFileWithExtension(loadAdditionalCharges.getRoc(),
 						loadAdditionalCharges.getLoad_number() + "_roc");
+				String newFileNameWithoutExtension = CommonController.getNewFileNameWithoutExtension(newFileName);
 				// Read file data BEFORE the async block
 				byte[] fileBytes = loadAdditionalCharges.getRoc().getBytes(); // ✅ Safe: temp file still exists
 				String originalFileName = loadAdditionalCharges.getRoc().getOriginalFilename();
@@ -1270,31 +1281,118 @@ public class LoadRepository {
 					fos.write(fileBytes); // ✅ Writes from in-memory bytes
 				}
 				logger.info("LoadRepository : requestToInvoice File storing local end");
-				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-					try {
+//				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+//					try {
+//
+//						// Upload to Google Drive
+//						try {
+//							String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name, driverFolderId);
+//							MultipartFile multipartFile = CommonController.convertFileToMultipartFile(savedFile);
+//							String uploadFileToDriveWithReplace = GoogleDriveService.uploadFileToDriveWithReplace(multipartFile, newFileName, subFolderId);
+//
+//						} catch (IOException ioEx) {
+//							// Handle file conversion or upload errors
+//							logger.info("Failed during Google Drive operations: " + ioEx.getMessage());
+//							ioEx.printStackTrace();
+//							return;
+//						} catch (Exception driveEx) {
+//							logger.info("Unexpected error during Google Drive upload: " + driveEx.getMessage());
+//							driveEx.printStackTrace();
+//							return;
+//						}
+//
+//					} catch (Exception ex) {
+//						System.err.println("Unexpected error in async process: " + ex.getMessage());
+//						ex.printStackTrace();
+//					}
+//				});
+				int MAX_RETRIES = 3;
+				int TIMEOUT_SECONDS = 30	;
+				String fileId = null;
 
-						// Upload to Google Drive
-						try {
-							String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name, driverFolderId);
-							MultipartFile multipartFile = CommonController.convertFileToMultipartFile(savedFile);
-							GoogleDriveService.uploadFileToDriveWithReplace(multipartFile, newFileName, subFolderId);
+				for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+				    try {
+				        logger.info("Attempt " + attempt + ": Starting Google Drive upload...");
 
-						} catch (IOException ioEx) {
-							// Handle file conversion or upload errors
-							logger.info("Failed during Google Drive operations: " + ioEx.getMessage());
-							ioEx.printStackTrace();
-							return;
-						} catch (Exception driveEx) {
-							logger.info("Unexpected error during Google Drive upload: " + driveEx.getMessage());
-							driveEx.printStackTrace();
-							return;
-						}
+				        CompletableFuture<String> uploadFuture = CompletableFuture.supplyAsync(() -> {
+				            try {
+				                String googleDriveRootFolderId = "1fmaG8oHZgel79ol0EuqYEfIqBYU--zzJ";
+				                String yearFolderId = "";
+				                if(loadAdditionalCharges.isLog_applicable_flag()) {
+				                	 yearFolderId  = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue(), googleDriveRootFolderId);
+				                }else {
+				                	 yearFolderId  = GoogleDriveService.getOrCreateFolder("year_" + Year.now().getValue()+ "_NoLog", googleDriveRootFolderId);
+				                }
+				               
+				                
+				                String monthFolderId = GoogleDriveService.getOrCreateFolder(month, yearFolderId);
+				                String driverFolderId = GoogleDriveService.getOrCreateFolder(loadAdditionalCharges.getDriver_name().trim(), monthFolderId);
+				                String subFolderId = GoogleDriveService.getOrCreateFolder(sub_folder_name.trim(),
+				                    driverFolderId
+				                );
 
-					} catch (Exception ex) {
-						System.err.println("Unexpected error in async process: " + ex.getMessage());
-						ex.printStackTrace();
-					}
-				});
+				               
+      							MultipartFile multipartFile = CommonController.convertFileToMultipartFile(savedFile);
+								String innerFileId = GoogleDriveService.uploadFileToDriveWithReplace(multipartFile, newFileName, subFolderId);
+				                logger.info("Google Drive upload successful. File ID: " + innerFileId);
+				                return innerFileId;
+				            } catch (Exception e) {
+				                logger.error("Upload attempt failed: " + e.getMessage(), e);
+				                return null;
+				            }
+				        });
+
+				        // Wait with timeout
+				        fileId = uploadFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+				        if (fileId != null) {
+				            logger.info("Upload successful on attempt " + attempt);
+				            break; // Exit the retry loop
+				        } else {
+				            logger.warn("Upload failed on attempt " + attempt);
+				        }
+
+				    } catch (TimeoutException te) {
+				        logger.error("Upload timed out on attempt " + attempt + ": " + te.getMessage());
+				    } catch (Exception e) {
+				        logger.error("Unexpected error during upload on attempt " + attempt + ": " + e.getMessage(), e);
+				    }
+
+				    if (attempt < MAX_RETRIES) {
+				        logger.info("Retrying upload (attempt " + (attempt + 1) + " of " + MAX_RETRIES + ")...");
+				    } else {
+				        logger.warn("Max retry attempts reached. Upload failed.");
+				    }
+				}
+
+				// Proceed to DB insert only if fileId is available
+				if (fileId != null) {
+					Object[] param_to_get_document_details = { loadAdditionalCharges.getLoad_number(), 2 };
+
+			        DriverDocumentDto driverDocumentDto = dbContextserviceBms.QueryToFirstWithParam(
+			                QueryMaster.get_document_details_by_load_and_subfolder, param_to_get_document_details, DriverDocumentDto.class);
+				    logger.info("Proceeding to DB insert after successful upload...");
+				    Object[] param_for_document_update = {
+                            (long)driverDocumentDto.getDriver_documents_id(),
+                            newFileNameWithoutExtension,
+                            newFileName,
+                            driverFolder + "/" + sub_folder_name_for_roc,
+                            2l,
+                            Long.parseLong(loadAdditionalCharges.getDriver_id()),
+                            driverDocumentDto.getMonth_name(),
+                            driverDocumentDto.getYear(),
+                            loadAdditionalCharges.getLoad_number(),
+                            fileId
+                    };
+                    System.out.println("param_for_document_update: " + Arrays.toString(param_for_document_update));
+
+                    logger.info("Updating DB with new file path and Google Drive ID...");
+                    dbContextserviceBms.QueryToFirstWithInt(QueryMaster.update_driver_document_drive_file_id, param_for_document_update);
+                    logger.info("DB update successful.");
+				} else {
+				    logger.warn("Upload ultimately failed. Skipping DB insert.");
+				}
+
 
 				logger.info("LoadRepository : requestToInvoice File uploding end");
 
@@ -1314,6 +1412,7 @@ public class LoadRepository {
 						Object params_for_company_dto[] = { loadAdditionalCharges.getCompany_id() };
 						CompanyDetailsDto companyDto = dbContextserviceBms.QueryToFirstWithParam(
 								QueryMaster.get_company_details_by_id, params_for_company_dto, CompanyDetailsDto.class);
+						companyDto.setDriver_name(loadAdditionalCharges.getDriver_name());
 						logger.info("LoadRepository : requestToInvoice get company details end");
 						logger.info("LoadRepository : requestToInvoice generateInvoicePdf start");
 						String invoicePdf = CommonUtility.generateInvoicePdf(companyDto, invoice_number, loadAdditionalCharges.getAmount(),

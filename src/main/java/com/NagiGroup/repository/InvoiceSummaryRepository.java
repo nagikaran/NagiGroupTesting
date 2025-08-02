@@ -12,7 +12,6 @@ import com.NagiGroup.connection.web.DbContextService;
 import com.NagiGroup.conroller.CommonController;
 import com.NagiGroup.dto.InvoiceSummary.InvoiceSummaryDTO;
 import com.NagiGroup.dto.LoadPendingCharges.LoadPendingChargesDTO;
-import com.NagiGroup.dto.load.LoadDto;
 import com.NagiGroup.model.invoiceSummary.UpdatePaymentStatusModel;
 import com.NagiGroup.query.QueryMaster;
 import com.NagiGroup.utility.ApiResponse;

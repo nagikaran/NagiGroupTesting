@@ -18,6 +18,7 @@ public class DriverDocumentManagementDto {
 	private String driver_name;
 	private int document_year;
 	private String document_month;
+	private String drive_file_id;
 	public String getDocument_name() {
 		return document_name;
 	}
@@ -78,8 +79,12 @@ public class DriverDocumentManagementDto {
 	public void setDocument_month(String document_month) {
 		this.document_month = document_month.trim();
 	}
-	
-	
+	public String getDrive_file_id() {
+		return drive_file_id;
+	}
+	public void setDrive_file_id(String drive_file_id) {
+		this.drive_file_id = drive_file_id;
+	}
 	
 
 }

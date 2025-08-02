@@ -25,6 +25,7 @@ public class LoadAdditionalCharges {
 	private int company_id;
 	private double amount;
 	private double layover;
+	private boolean log_applicable_flag;
 	
 
 	@Nullable

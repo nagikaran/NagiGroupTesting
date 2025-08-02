@@ -1,5 +1,6 @@
 package com.NagiGroup.config;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -264,7 +265,7 @@ public class GoogleDriveService {
     }
 
 
-    public static void uploadFileToDriveWithReplace(MultipartFile file, String fileName, String folderId) throws IOException, GeneralSecurityException {
+    public static String  uploadFileToDriveWithReplace(MultipartFile file, String fileName, String folderId) throws IOException, GeneralSecurityException {
         Drive service = getDriveService(); // assumes you have a method for this
 
         // 1. Check if a file with the same name exists in the folder
@@ -282,9 +283,10 @@ public class GoogleDriveService {
         fileMetadata.setParents(Collections.singletonList(folderId));
 
         FileContent mediaContent = new FileContent(file.getContentType(), convertMultiPartToFile(file));
-        service.files().create(fileMetadata, mediaContent)
+        File execute = service.files().create(fileMetadata, mediaContent)
                 .setFields("id, parents")
                 .execute();
+       return execute.getId();
     }
     public static java.io.File convertMultiPartToFile(MultipartFile file) throws IOException {
         java.io.File convFile = java.io.File.createTempFile("upload_", "_" + file.getOriginalFilename());
@@ -373,6 +375,20 @@ public class GoogleDriveService {
         service.files().delete(fileId).execute();
     }
 
+    public static String getFileName(String fileId) throws IOException, GeneralSecurityException {
+    	Drive service = getDriveService();
+        File file = service.files().get(fileId).setFields("name").execute();
+        return file.getName();
+    }
+    
+    public static ByteArrayOutputStream downloadFile(String fileId) throws IOException, GeneralSecurityException {
+        Drive service = getDriveService();
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        service.files().get(fileId).executeMediaAndDownloadTo(outputStream);
+
+        return outputStream;
+    }
 
     
 }
